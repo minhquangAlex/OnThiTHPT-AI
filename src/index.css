@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #ffffff;
+    color: #0f172a; /* slate-900 */
+    transition: background-color 200ms, color 200ms;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  /* Style cho các button chính */
+  .btn {
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  /* Style cho card trong trang chủ */
+  .feature-card {
+    @apply p-8 bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  /* Style cho tiêu đề chính */
+  .main-title {
+    @apply text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent;
+  }
+
+  /* Style cho tiêu đề phụ */
+  .sub-title {
+    @apply text-xl font-bold text-indigo-600 dark:text-indigo-400 mb-4;
+  }
+
+  /* Style cho các phần text mô tả */
+  .description-text {
+    @apply text-lg text-slate-600 dark:text-slate-300 leading-relaxed;
+  }
+
+  /* Style cho container */
+  .content-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12;
+  }
+
+  /* Style cho grid layout */
+  .features-grid {
+    @apply grid grid-cols-1 md:grid-cols-3 gap-8 mt-16;
+  } 
+
+  /* Style cho icon container */
+  .icon-container {
+    @apply w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 
+           bg-gradient-to-br from-indigo-100 to-purple-100 
+           dark:from-indigo-900/30 dark:to-purple-900/30
+           group-hover:scale-110 transition-transform duration-200;
+  }
+
+  /* Style cho các icon */
+  .feature-icon {
+    @apply w-8 h-8 text-indigo-600 dark:text-indigo-400;
+  }
+}
+
+@layer utilities {
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+  
+  /* Thêm hiệu ứng gradient cho background */
+  .bg-gradient-overlay {
+    background: linear-gradient(135deg, 
+      rgba(79, 70, 229, 0.1) 0%,
+      rgba(147, 51, 234, 0.1) 100%);
+  }
+  
+  /* Hiệu ứng hover cho các card */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+}
+
+/* Hiệu ứng cho các blob decoration */
+.blob {
+  @apply absolute rounded-full filter blur-xl opacity-70 animate-blob;
+  background: radial-gradient(circle at center, rgba(var(--color), 0.8) 0%, rgba(var(--color), 0) 70%);
+}
+
+.blob-indigo {
+  --color: 99, 102, 241;
+}
+
+.blob-purple {
+  --color: 147, 51, 234;
+}
+
+.blob-pink {
+  --color: 236, 72, 153;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(99,102,241,0.5); /* indigo-500/50 */
+  border-radius: 9999px;
+}
+
+/* dark mode background for body */
+html.dark body {
+  background-color: #0f172a; /* slate-900 */
+  color: #e6eef8; /* light text for dark bg */
+}
+
+/* Improve modal form contrast: inputs/selects/textareas inside modal (.max-w-2xl) */
+.max-w-2xl input,
+.max-w-2xl textarea,
+.max-w-2xl select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(148,163,184,0.06);
+  background-color: #ffffff; /* light default */
+  color: #0f172a;
+}
+
+/* Dark mode: make form controls darker and reduce glare */
+.dark .max-w-2xl input,
+.dark .max-w-2xl textarea,
+.dark .max-w-2xl select {
+  background-color: #0b1220; /* darker field */
+  color: #e6eef8;
+  border: 1px solid rgba(148,163,184,0.12);
+}
+
+.max-w-2xl textarea { min-height: 88px; }
+
+.max-w-2xl input::placeholder,
+.max-w-2xl textarea::placeholder {
+  color: rgba(148,163,184,0.6);
+}
+
+.max-w-2xl input:focus,
+.max-w-2xl textarea:focus,
+.max-w-2xl select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  border-color: rgba(99,102,241,0.6);
+}
