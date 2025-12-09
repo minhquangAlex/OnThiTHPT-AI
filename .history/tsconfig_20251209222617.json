@@ -24,15 +24,11 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
-  },
-  "include": [
-    "src"
-  ],
-  "exclude": [
+    "noEmit": true,
+    "exclude": [
     "node_modules",
-    "backend",
-    "backend/**/*",
-    "dist"
+    "backend",       // <--- QUAN TRỌNG: Bảo nó đừng đụng vào backend
+    "backend/**/*"   // <--- Thêm dòng này cho chắc chắn
   ]
+  }
 }
