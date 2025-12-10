@@ -151,70 +151,18 @@ const ResultsPage: React.FC = () => {
       try { userSelection = JSON.parse(selectedAnswer); } catch {}
 
       return (
-        <div className="space-y-2 mt-2">
-          {/* Header nhỏ để người dùng dễ hiểu */}
-          <div className="flex justify-between text-xs text-slate-500 px-2 mb-1">
-            <span>Nội dung mệnh đề</span>
-            <span>Lựa chọn của bạn</span>
-          </div>
-
-          {question.trueFalseOptions?.map((opt) => {
-            const userVal = userSelection[opt.id]; // Giá trị user chọn: true/false/undefined
-            const correctVal = opt.isCorrect;      // Đáp án đúng: true/false
-            
-            // Kiểm tra từng ý nhỏ
-            const isSubCorrect = userVal === correctVal;
-            const isUnanswered = userVal === undefined || userVal === null;
-
-            return (
-              <div 
-                key={opt.id} 
-                className={`p-3 border rounded flex items-center justify-between gap-3 transition-colors ${
-                  isUnanswered 
-                    ? 'bg-slate-50 border-slate-200' // Chưa làm -> Màu xám
-                    : isSubCorrect 
-                      ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' // Đúng -> Nền xanh
-                      : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' // Sai -> Nền đỏ
-                }`}
-              >
-                {/* Nội dung câu hỏi con */}
-                <div className="flex-1 flex items-start gap-2">
-                  <span className={`font-bold uppercase w-4 shrink-0 ${isSubCorrect ? 'text-green-600' : (isUnanswered ? 'text-slate-500' : 'text-red-500')}`}>
-                    {opt.id})
-                  </span>
-                  <span className="text-sm text-slate-700 dark:text-slate-200">{opt.text}</span>
-                </div>
-
-                {/* Phần hiển thị trạng thái Đúng/Sai */}
-                <div className="flex gap-2 shrink-0">
-                  {/* Nút ĐÚNG */}
-                  <div className={`px-3 py-1 rounded text-xs font-bold border flex items-center gap-1 ${
-                    userVal === true 
-                      ? (correctVal === true ? 'bg-green-600 text-white border-green-600' : 'bg-red-500 text-white border-red-500') // User chọn Đúng
-                      : (correctVal === true && !isSubCorrect && !isUnanswered ? 'bg-white text-green-600 border-green-600 border-dashed opacity-70' : 'bg-slate-100 text-slate-400 border-slate-200 opacity-50') // User ko chọn, hoặc gợi ý đáp án đúng
-                  }`}>
-                    {userVal === true && (correctVal === true ? <CheckCircleIcon className="w-3 h-3"/> : <XCircleIcon className="w-3 h-3"/>)}
-                    Đúng
-                  </div>
-
-                  {/* Nút SAI */}
-                  <div className={`px-3 py-1 rounded text-xs font-bold border flex items-center gap-1 ${
-                    userVal === false 
-                      ? (correctVal === false ? 'bg-green-600 text-white border-green-600' : 'bg-red-500 text-white border-red-500') // User chọn Sai
-                      : (correctVal === false && !isSubCorrect && !isUnanswered ? 'bg-white text-green-600 border-green-600 border-dashed opacity-70' : 'bg-slate-100 text-slate-400 border-slate-200 opacity-50') // User ko chọn
-                  }`}>
-                    {userVal === false && (correctVal === false ? <CheckCircleIcon className="w-3 h-3"/> : <XCircleIcon className="w-3 h-3"/>)}
-                    Sai
-                  </div>
-                </div>
+        <div className="space-y-2">
+          {question.trueFalseOptions?.map((opt) => (
+            <div key={opt.id} className="p-3 border rounded bg-white dark:bg-slate-700 flex justify-between items-center">
+              <span className="flex-1 mr-2"><span className="font-bold text-indigo-500">{opt.id})</span> {opt.text}</span>
+              <div className="flex gap-2 text-sm">
+                {/* Hiển thị lựa chọn của người dùng */}
+                <span className={`px-2 py-1 rounded border ${userSelection[opt.id] === true ? 'bg-blue-100 border-blue-500 font-bold' : 'opacity-50'}`}>Đúng</span>
+                <span className={`px-2 py-1 rounded border ${userSelection[opt.id] === false ? 'bg-blue-100 border-blue-500 font-bold' : 'opacity-50'}`}>Sai</span>
               </div>
-            );
-          })}
-          
-          {/* Chú thích nhỏ nếu cần */}
-          <div className="text-right text-xs text-slate-400 mt-1">
-            * Màu xanh: Chính xác | Màu đỏ: Sai
-          </div>
+            </div>
+          ))}
+          {/* Gợi ý đáp án đúng nếu cần thiết (Hiện tại backend chưa gửi về chi tiết đúng sai từng ý cho frontend khi làm bài xong để tránh lộ, tùy logic của bạn) */}
         </div>
       );
     }

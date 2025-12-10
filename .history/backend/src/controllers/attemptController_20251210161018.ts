@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import { Attempt } from '../models/Attempt';
-import { User } from '../models/User';
-import { Question } from '../models/Question';
 import { Subject } from '../models/Subject';
 
 // Create an attempt record. This endpoint is intentionally public so the
@@ -10,9 +8,25 @@ import { Subject } from '../models/Subject';
 export const createAttempt = async (req: Request, res: Response) => {
   try {
     const { userId, subjectId, score, total, answers } = req.body;
+    console.log('--- [DEBUG] Backend - createAttempt - answers from req.body:', answers);
 
-    // Find the subject by its slug (which is what subjectId is from the frontend)
-    const subject = await Subject.findOne({ slug: subjectId });
+    // subjectId from frontend may be either a Subject._id (ObjectId string)
+    // or a subject slug (legacy). Support both formats for compatibility.
+    let subject = null;
+    // If subjectId looks like a valid ObjectId, try findById first
+    try {
+      const isObjectId = subjectId && subjectId.toString && /^[0-9a-fA-F]{24}$/.test(subjectId.toString());
+      if (isObjectId) {
+        subject = await Subject.findById(subjectId);
+      }
+    } catch (e) {
+      // ignore and fallback to slug lookup
+      subject = null;
+    }
+    // Fallback to slug lookup if not found
+    if (!subject) {
+      subject = await Subject.findOne({ slug: subjectId });
+    }
     if (!subject) {
       return res.status(404).json({ message: 'Môn học không tồn tại' });
     }
@@ -67,13 +81,7 @@ export const getAttemptById = async (req: Request, res: Response) => {
   try {
     const attempt = await Attempt.findById(req.params.id)
       .populate('userId', 'name')
-      .populate({
-        path: 'answers',
-        populate: {
-          path: 'questionId',
-          model: 'Question'
-        }
-      })
+      .populate('answers.questionId')
       .lean(); // Use .lean() for a plain JS object
 
     if (!attempt) {
@@ -118,6 +126,42 @@ export const deleteAttempt = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting attempt:', error);
           res.status(500).json({ message: 'Lỗi khi xóa lượt làm bài' });
+      }
+    };
+    
+    // @desc    Get attempts of current user (cho trang cá nhân)
+    // @route   GET /api/attempts/my-attempts
+    // @access  Private (User)
+    export const getMyAttempts = async (req: Request, res: Response) => {
+      try {
+        // Lấy userId từ token (req.user được set bởi auth middleware)
+        const userId = (req as any).user?.id || (req as any).userId;
+        
+        if (!userId) {
+          return res.status(401).json({ message: 'Không xác thực được người dùng' });
+        }
+
+        // Lấy attempts của user hiện tại
+        const attempts = await Attempt.find({ userId }).sort({ createdAt: -1 }).populate('userId', 'name').lean();
+        const subjects = await Subject.find({}).lean();
+
+        // Tạo map cho lookup nhanh
+        const subjectMapById = new Map(subjects.map(s => [s._id.toString(), s]));
+
+        // Định dạng dữ liệu attempts
+        const formattedAttempts = attempts.map((attempt: any) => {
+          const subject = subjectMapById.get(attempt.subjectId?.toString() || '');
+          return {
+            ...attempt,
+            subjectId: subject?._id || attempt.subjectId,
+            subjectName: subject?.name || 'Unknown',
+          };
+        });
+
+        res.json(formattedAttempts);
+      } catch (error) {
+        console.error('Error getting user attempts:', error);
+        res.status(500).json({ message: 'Lỗi khi lấy lịch sử làm bài' });
       }
     };
     

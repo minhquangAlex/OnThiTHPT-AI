@@ -3,10 +3,9 @@ import { Attempt } from '../models/Attempt';
 import { Subject } from '../models/Subject';
 import { Question } from '../models/Question';
 
-// --- HÀM TÍNH ĐIỂM & QUY ĐỔI THANG 10 ---
+// --- HÀM TÍNH ĐIỂM (LOGIC QUAN TRỌNG) ---
 const calculateScore = async (answers: any[]) => {
-    let userRawScore = 0;      // Điểm thô người dùng đạt được
-    let maxPossibleScore = 0;  // Điểm thô tối đa của đề thi này
+    let totalScore = 0;
     
     // Lấy danh sách ID câu hỏi từ bài làm
     const questionIds = answers.map(a => a.questionId);
@@ -14,95 +13,76 @@ const calculateScore = async (answers: any[]) => {
     // Tìm tất cả câu hỏi trong DB để lấy đáp án đúng
     const dbQuestions = await Question.find({ _id: { $in: questionIds } });
     
-    // Tạo map để tra cứu nhanh: { "questionId": QuestionDoc }
-    // Sử dụng (q: any) để tránh lỗi TypeScript 'unknown'
+    // SỬA LỖI 1: Thêm (q: any) để TypeScript không báo lỗi 'unknown'
     const questionMap = new Map(dbQuestions.map((q: any) => [q._id.toString(), q]));
 
     for (const ans of answers) {
-        const question: any = questionMap.get(ans.questionId.toString());
+        const question = questionMap.get(ans.questionId.toString());
         if (!question) continue;
 
-        let isCorrect = false; // Trạng thái hiển thị màu sắc (Xanh/Đỏ) cho câu hỏi này
-        const qType = question.type || 'multiple_choice';
+        let isCorrect = false;
 
-        // 1. TRẮC NGHIỆM (Phần I)
+        // 1. TRẮC NGHIỆM (0.25đ)
+        // Dùng (question as any).type để tránh lỗi nếu interface chưa cập nhật kịp
+        const qType = (question as any).type || 'multiple_choice';
+
         if (qType === 'multiple_choice') {
-            maxPossibleScore += 0.25; // Cộng max điểm
-            
-            if (ans.selectedAnswer === question.correctAnswer) {
-                userRawScore += 0.25;
+            if (ans.selectedAnswer === (question as any).correctAnswer) {
+                totalScore += 0.25;
                 isCorrect = true;
             }
         } 
         
-        // 2. TRẢ LỜI NGẮN (Phần III)
+        // 2. TRẢ LỜI NGẮN (0.5đ)
         else if (qType === 'short_answer') {
-            maxPossibleScore += 0.5; // Cộng max điểm
+            const userAnswer = String(ans.selectedAnswer).trim().replace(',', '.');
+            const correctAnswer = String((question as any).shortAnswerCorrect).trim().replace(',', '.');
             
-            // Chuẩn hóa: về chuỗi, cắt khoảng trắng, đổi dấu phẩy thành chấm
-            const userAnswer = String(ans.selectedAnswer || '').trim().replace(',', '.');
-            const correctAnswer = String(question.shortAnswerCorrect || '').trim().replace(',', '.');
-            
-            // So sánh số học hoặc chuỗi
             const isNumberEqual = !isNaN(Number(userAnswer)) && !isNaN(Number(correctAnswer)) && Number(userAnswer) === Number(correctAnswer);
             
             if (userAnswer.toLowerCase() === correctAnswer.toLowerCase() || isNumberEqual) {
-                userRawScore += 0.5;
+                totalScore += 0.5;
                 isCorrect = true;
             }
         }
 
-        // 3. ĐÚNG / SAI (Phần II)
+        // 3. ĐÚNG / SAI (Điểm lũy tiến)
         else if (qType === 'true_false') {
-            maxPossibleScore += 1.0; // Cộng max điểm (nếu đúng cả 4 ý)
-            
+            // SỬA LỖI 2: Khai báo là any để tránh lỗi index type
             let userTF: any = {}; 
             try { userTF = JSON.parse(ans.selectedAnswer); } catch {}
             
             let correctCount = 0;
-            const tfOptions = question.trueFalseOptions || [];
+            const tfOptions = (question as any).trueFalseOptions || [];
 
-            // Đếm số ý đúng
             tfOptions.forEach((opt: any) => {
+                // So sánh true/false
                 if (userTF[opt.id] === opt.isCorrect) {
                     correctCount++;
                 }
             });
 
-            // Cộng điểm theo thang lũy tiến của Bộ GD
-            if (correctCount === 1) userRawScore += 0.1;
-            if (correctCount === 2) userRawScore += 0.25;
-            if (correctCount === 3) userRawScore += 0.5;
+            if (correctCount === 1) totalScore += 0.1;
+            if (correctCount === 2) totalScore += 0.25;
+            if (correctCount === 3) totalScore += 0.5;
             if (correctCount === 4) {
-                userRawScore += 1.0;
-                isCorrect = true; // Chỉ coi là "Đúng hoàn toàn" nếu đúng cả 4 ý
+                totalScore += 1.0;
+                isCorrect = true;
             }
         }
 
-        // Cập nhật trạng thái vào câu trả lời để lưu DB
         ans.isCorrect = isCorrect; 
     }
 
-    // --- QUY ĐỔI VỀ THANG 10 ---
-    let finalScore = 0;
-    if (maxPossibleScore > 0) {
-        finalScore = (userRawScore / maxPossibleScore) * 10;
-    }
-
-    // Làm tròn 2 chữ số thập phân (VD: 9.75)
-    finalScore = Math.round(finalScore * 100) / 100;
-
-    return { totalScore: finalScore, updatedAnswers: answers };
+    return { totalScore, updatedAnswers: answers };
 };
 
 
-// @desc    Create a new attempt
-// @route   POST /api/attempts
 export const createAttempt = async (req: Request, res: Response) => {
   try {
     const { userId, subjectId, total, answers } = req.body;
     
-    // Tính toán điểm số tại Server
+    // Tính điểm tại server
     const { totalScore, updatedAnswers } = await calculateScore(answers);
     
     let subject = null;
@@ -115,7 +95,7 @@ export const createAttempt = async (req: Request, res: Response) => {
     const attempt = await Attempt.create({ 
         userId, 
         subjectId: subject._id, 
-        score: totalScore, // Điểm thang 10
+        score: totalScore, 
         total, 
         answers: updatedAnswers 
     });
@@ -127,8 +107,6 @@ export const createAttempt = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Get all attempts (Admin)
-// @route   GET /api/attempts
 export const getAllAttempts = async (req: Request, res: Response) => {
     try {
         const attempts = await Attempt.find().sort({ createdAt: -1 }).populate('userId', 'name').lean();
@@ -149,59 +127,50 @@ export const getAllAttempts = async (req: Request, res: Response) => {
         });
         res.json(populatedAttempts);
       } catch (error) {
-        res.status(500).json({ message: 'Lỗi khi lấy danh sách' });
+        res.status(500).json({ message: 'Lỗi' });
       }
 };
 
-// @desc    Get attempt by ID
-// @route   GET /api/attempts/:id
 export const getAttemptById = async (req: Request, res: Response) => {
     try {
         const attempt = await Attempt.findById(req.params.id)
           .populate('userId', 'name')
           .populate('answers.questionId')
           .lean();
-        if (!attempt) return res.status(404).json({ message: 'Không tìm thấy lượt làm bài' });
+        if (!attempt) return res.status(404).json({ message: 'Not found' });
     
         let subjectDoc = null;
         if (attempt.subjectId) {
           subjectDoc = await Subject.findById(attempt.subjectId).lean() || await Subject.findOne({ slug: attempt.subjectId.toString() }).lean();
         }
-        
-        // Check quyền truy cập (Admin hoặc chính chủ)
         // @ts-ignore
-        if (req.user && req.user.role !== 'admin' && attempt.userId?._id.toString() !== req.user._id.toString()) {
-          return res.status(403).json({ message: 'Bạn không có quyền xem bài làm này' });
+        if (req.user.role !== 'admin' && attempt.userId?._id.toString() !== req.user._id.toString()) {
+          return res.status(403).json({ message: 'Forbidden' });
         }
-
         res.json({ ...attempt, subjectId: subjectDoc });
       } catch (error) {
-        res.status(500).json({ message: 'Lỗi khi lấy chi tiết' });
+        res.status(500).json({ message: 'Error' });
       }
 };
 
-// @desc    Delete attempt
-// @route   DELETE /api/attempts/:id
 export const deleteAttempt = async (req: Request, res: Response) => {
     try {
         const attempt = await Attempt.findById(req.params.id);
         if (attempt) {
           await attempt.deleteOne();
-          res.json({ message: 'Đã xóa lượt làm bài' });
+          res.json({ message: 'Deleted' });
         } else {
-          res.status(404).json({ message: 'Không tìm thấy' });
+          res.status(404).json({ message: 'Not found' });
         }
       } catch (error) {
-        res.status(500).json({ message: 'Lỗi khi xóa' });
+        res.status(500).json({ message: 'Error' });
       }
 };
 
-// @desc    Get current user attempts
-// @route   GET /api/attempts/my-attempts
 export const getMyAttempts = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.id || (req as any).userId;
-        if (!userId) return res.status(401).json({ message: 'Chưa đăng nhập' });
+        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
         const attempts = await Attempt.find({ userId }).sort({ createdAt: -1 }).populate('userId', 'name').lean();
         const subjects = await Subject.find({}).lean();
@@ -217,17 +186,15 @@ export const getMyAttempts = async (req: Request, res: Response) => {
         });
         res.json(formattedAttempts);
       } catch (error) {
-        res.status(500).json({ message: 'Lỗi khi lấy lịch sử' });
+        res.status(500).json({ message: 'Error' });
       }
 };
 
-// @desc    Delete all attempts (Admin)
-// @route   DELETE /api/attempts/all
 export const deleteAllAttempts = async (req: Request, res: Response) => {
     try {
         await Attempt.deleteMany({});
-        res.json({ message: 'Đã xóa tất cả dữ liệu làm bài' });
+        res.json({ message: 'All deleted' });
       } catch (error) {
-        res.status(500).json({ message: 'Lỗi server' });
+        res.status(500).json({ message: 'Error' });
       }
 };
