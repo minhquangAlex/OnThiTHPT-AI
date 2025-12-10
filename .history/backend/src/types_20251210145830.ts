@@ -1,7 +1,7 @@
 // frontend/src/types.ts
 import type React from 'react';
 
-// 👇 THÊM DÒNG NÀY ĐỂ SỬA LỖI "has no exported member named QuestionType"
+// 1. Định nghĩa các loại câu hỏi (Mới)
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer';
 
 export interface User {
@@ -20,27 +20,30 @@ export interface Question {
   id: string;
   subjectId?: string;
   
-  // Sử dụng type vừa định nghĩa ở trên
+  // 👇 CẬP NHẬT: Loại câu hỏi
   type: QuestionType; 
 
   questionText: string;
   imageUrl?: string; 
   explanation: string;
 
-  // Phần I: Trắc nghiệm
+  // --- Phần I: Trắc nghiệm 4 lựa chọn (Optional) ---
   options?: {
-    A: string; B: string; C: string; D: string;
+    A: string;
+    B: string;
+    C: string;
+    D: string;
   };
   correctAnswer?: string; 
 
-  // Phần II: Đúng/Sai
+  // --- Phần II: Đúng / Sai (Mới) ---
   trueFalseOptions?: {
     id: string;   // 'a', 'b', 'c', 'd'
     text: string; 
     isCorrect?: boolean; 
   }[];
 
-  // Phần III: Trả lời ngắn
+  // --- Phần III: Trả lời ngắn (Mới) ---
   shortAnswerCorrect?: string; 
 }
 

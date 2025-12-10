@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
+import { Types } from 'mongoose'; // Thêm để validate ObjectId
 import { Question } from '../models/Question';
-import { Types } from 'mongoose';  // Thêm để validate ObjectId
 import { Subject } from '../models/Subject';
 
 // @desc    Fetch questions by subject
@@ -9,29 +9,29 @@ import { Subject } from '../models/Subject';
 export const getQuestionsBySubject = async (req: Request, res: Response) => {
     console.log('\n\x1b[35m--- [DEBUG Backend] Entering getQuestionsBySubject ---\x1b[0m');
     try {
-        const { subjectId } = req.params;  // Chỉ ID
-        console.log(`\x1b[35m[DEBUG Backend] 1. Received subjectId: '${subjectId}'\x1b[0m`);
+        const { subjectId } = req.params;  // may be slug or ObjectId
+        console.log(`\x1b[35m[DEBUG Backend] 1. Received subject identifier: '${subjectId}'\x1b[0m`);
 
-        // Validate ObjectId strict
-        if (!Types.ObjectId.isValid(subjectId)) {
-            console.log(`\x1b[35m[DEBUG Backend] 2. Invalid subjectId. Returning empty array.\x1b[0m`);
-            return res.status(400).json({ success: false, data: [], message: 'Invalid subject ID format' });
+        // Try to resolve subject by ObjectId first, then fallback to slug
+        let subject = null;
+        if (subjectId && Types.ObjectId.isValid(subjectId)) {
+            subject = await Subject.findById(new Types.ObjectId(subjectId));
+        }
+        if (!subject) {
+            subject = await Subject.findOne({ slug: subjectId });
         }
 
-        const objectId = new Types.ObjectId(subjectId);
-
-        // Optional: Validate subject tồn tại
-        const subject = await Subject.findById(objectId);
         if (!subject) {
-            console.log(`\x1b[35m[DEBUG Backend] 2. Subject NOT FOUND for ID '${subjectId}'. Returning empty.\x1b[0m`);
+            console.log(`\x1b[35m[DEBUG Backend] 2. Subject NOT FOUND for identifier '${subjectId}'. Returning empty.\x1b[0m`);
             return res.json({ success: true, data: [], message: 'Subject not found' });
         }
-        console.log(`\x1b[35m[DEBUG Backend] 2. Subject FOUND: '${subject.name}'\x1b[0m`);
+        console.log(`\x1b[35m[DEBUG Backend] 2. Subject FOUND: '${subject.name}' (id: ${subject._id})\x1b[0m`);
 
         // Query questions
         console.log(`\x1b[35m[DEBUG Backend] 3. Querying questions for subjectId: '${subjectId}'\x1b[0m`);
-        const questions = await Question.find({ subjectId: objectId })
-            .populate('subjectId', 'name');  // Populate name nếu cần
+        const questions = await Question.find({ subjectId: subject._id })
+            .populate('subjectId', 'name')
+            .sort({ _id: 1 }); // Sort by ObjectId (insertion time) ascending so order is stable (oldest first)
         console.log(`\x1b[35m[DEBUG Backend] 4. Found ${questions.length} questions: ${questions.map(q => q.questionText.substring(0, 20) + '...').join(', ')}\x1b[0m`);  // Log preview
 
         // Fix response: Luôn trả data là mảng, ngay cả empty
@@ -48,17 +48,43 @@ export const getQuestionsBySubject = async (req: Request, res: Response) => {
 // @access  Admin
 export const createQuestion = async (req: Request, res: Response) => {
     try {
-        const { subjectId, questionText, options, correctAnswer, explanation, imageUrl } = req.body;
+        // Lấy tất cả các trường dữ liệu mới từ req.body
+        const { 
+            subjectId, 
+            type, // <--- Mới
+            questionText, 
+            imageUrl, 
+            explanation,
+            // Các field riêng biệt
+            options, correctAnswer,       // Phần I
+            trueFalseOptions,             // Phần II
+            shortAnswerCorrect            // Phần III
+        } = req.body;
+
         if (!Types.ObjectId.isValid(subjectId as string)) {
             return res.status(400).json({ message: 'Invalid subject ID' });
         }
+
+        // Tạo câu hỏi mới
         const question = await Question.create({ 
             subjectId: new Types.ObjectId(subjectId as string), 
-            questionText, options, correctAnswer, explanation, imageUrl 
+            type: type || 'multiple_choice',
+            questionText, 
+            imageUrl,
+            explanation,
+            options, 
+            correctAnswer, 
+            trueFalseOptions, 
+            shortAnswerCorrect 
         });
+
+        // Cập nhật số lượng câu hỏi cho môn học
+        await Subject.findByIdAndUpdate(subjectId, { $inc: { questionCount: 1 } });
+
         res.status(201).json(question);
-    } catch (error) {
-        res.status(500).json({ message: 'Lỗi khi tạo câu hỏi' });
+    } catch (error: any) {
+        console.error("❌ Error creating question:", error);
+        res.status(500).json({ message: 'Lỗi khi tạo câu hỏi', error: error.message });
     }
 };
 

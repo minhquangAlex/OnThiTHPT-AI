@@ -7,6 +7,21 @@ import Spinner from '../components/Spinner';
 import { useTimer } from '../hooks/useTimer';
 import api from '../services/api';
 import { useQuizStore } from '../store/useQuizStore';
+import NgrokImage from '../components/NgrokImage'; 
+// --- HÀM HELPER: Lấy đường dẫn ảnh đầy đủ từ Backend ---
+const getFullImageUrl = (imagePath?: string) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+
+  // Lấy API URL từ file .env hoặc fallback cứng
+  const apiUrl = (import.meta as any).env.VITE_API_URL || 'https://undisputedly-nonsocialistic-sheba.ngrok-free.dev/api';
+  
+  // Cắt bỏ đuôi '/api' để lấy domain gốc của backend (nơi chứa folder uploads)
+  // Ví dụ: ...ngrok-free.dev/api -> ...ngrok-free.dev
+  const rootUrl = apiUrl.replace(/\/api\/?$/, '');
+  
+  return `${rootUrl}${imagePath}`;
+};
 
 const QuizPage: React.FC = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
@@ -27,7 +42,6 @@ const QuizPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-
   const handleTimeout = () => {
     if (subjectId) {
         (async () => {
@@ -37,8 +51,7 @@ const QuizPage: React.FC = () => {
           if (attemptId) {
             navigate(`/results/${attemptId}`, { state: { fromQuizCompletion: true } });
           } else {
-            // Fallback or error handling if attemptId is not returned
-            navigate('/dashboard'); // Or show an error message
+            navigate('/dashboard'); 
           }
         })();
     }
@@ -56,7 +69,7 @@ const QuizPage: React.FC = () => {
         } catch (error) {
           console.error("Failed to fetch questions:", error);
           alert("Không thể tải được câu hỏi cho môn học này. Vui lòng thử lại.");
-          navigate('/dashboard'); // Navigate back if questions can't be loaded
+          navigate('/dashboard'); 
         } finally {
           setIsLoading(false);
         }
@@ -75,11 +88,11 @@ const QuizPage: React.FC = () => {
   }, [subjectId, setQuiz, resetQuiz]);
 
   const currentQuestion = questions[currentQuestionIndex];
-  const selectedAnswer = currentQuestion ? answers[currentQuestion._id] : null;  // ← SỬA: _id thay vì id
+  const selectedAnswer = currentQuestion ? answers[currentQuestion._id] : null;
 
   const handleSelectAnswer = (answer: string) => {
     if (currentQuestion) {
-      selectAnswer(currentQuestion._id, answer);  // ← SỬA: _id thay vì id
+      selectAnswer(currentQuestion._id, answer);
     }
   };
 
@@ -95,8 +108,7 @@ const QuizPage: React.FC = () => {
           if (attemptId) {
             navigate(`/results/${attemptId}`, { state: { fromQuizCompletion: true } });
           } else {
-            // Fallback or error handling if attemptId is not returned
-            navigate('/dashboard'); // Or show an error message
+            navigate('/dashboard'); 
           }
         })();
       }
@@ -123,7 +135,6 @@ const QuizPage: React.FC = () => {
   }
   
   if (!currentQuestion) {
-    // This case might happen briefly or if something is wrong, but the above check is more specific.
     return (
       <div className="flex justify-center items-center h-64">
         <Spinner />
@@ -144,27 +155,50 @@ const QuizPage: React.FC = () => {
           </div>
         </div>
         <div className="p-6">
-          <p className="text-lg mb-6">{currentQuestion.questionText}</p>
+          
+          {/* --- KHU VỰC HIỂN THỊ ẢNH CÂU HỎI --- */}
+          {currentQuestion.imageUrl && (
+            <div className="mb-6 flex justify-center">
+              <NgrokImage 
+                src={getFullImageUrl(currentQuestion.imageUrl) || ''} 
+                alt="Hình minh họa câu hỏi" 
+                className="max-h-[350px] max-w-full object-contain rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm"
+                // onError={(e) => {
+                //   // Ẩn ảnh nếu load lỗi để tránh icon vỡ
+                //   (e.target as HTMLImageElement).style.display = 'none';
+                // }}
+              />
+            </div>
+          )}
+          {/* ------------------------------------ */}
+
+          {/* Chỉ hiển thị text nếu có nội dung */}
+          {currentQuestion.questionText && (
+            <p className="text-lg mb-6 whitespace-pre-wrap leading-relaxed text-slate-800 dark:text-slate-200">
+              {currentQuestion.questionText}
+            </p>
+          )}
+
           <div className="space-y-4">
             {Object.entries(currentQuestion.options).map(([key, value]) => (
               <button
                 key={key}
                 onClick={() => handleSelectAnswer(key)}
-                className={`w-full text-left p-4 border rounded-lg transition-colors duration-200 ${
+                className={`w-full text-left p-4 border rounded-lg transition-all duration-200 ${
                   selectedAnswer === key
-                    ? 'bg-indigo-100 dark:bg-indigo-900 border-indigo-500 ring-2 ring-indigo-500'
-                    : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    ? 'bg-indigo-100 dark:bg-indigo-900 border-indigo-500 ring-2 ring-indigo-500 shadow-md'
+                    : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-400'
                 }`}
               >
-                <span className="font-bold mr-2">{key}.</span>
-                {value}
+                <span className="font-bold mr-2 text-indigo-600 dark:text-indigo-400">{key}.</span>
+                <span className="text-slate-800 dark:text-slate-200">{value}</span>
               </button>
             ))}
           </div>
         </div>
         <div className="p-6 border-t dark:border-slate-700">
            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 mb-4">
-               <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div>
+               <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
            </div>
           <Button onClick={handleNext} disabled={!selectedAnswer || isSubmitting} className="w-full">
             {isSubmitting ? <Spinner size="sm" /> : (currentQuestionIndex < questions.length - 1 ? 'Câu tiếp theo' : 'Nộp bài')}

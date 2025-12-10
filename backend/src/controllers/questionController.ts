@@ -48,17 +48,43 @@ export const getQuestionsBySubject = async (req: Request, res: Response) => {
 // @access  Admin
 export const createQuestion = async (req: Request, res: Response) => {
     try {
-        const { subjectId, questionText, options, correctAnswer, explanation, imageUrl } = req.body;
+        // Lấy tất cả các trường dữ liệu mới từ req.body
+        const { 
+            subjectId, 
+            type, // <--- Mới
+            questionText, 
+            imageUrl, 
+            explanation,
+            // Các field riêng biệt
+            options, correctAnswer,       // Phần I
+            trueFalseOptions,             // Phần II
+            shortAnswerCorrect            // Phần III
+        } = req.body;
+
         if (!Types.ObjectId.isValid(subjectId as string)) {
             return res.status(400).json({ message: 'Invalid subject ID' });
         }
+
+        // Tạo câu hỏi mới
         const question = await Question.create({ 
             subjectId: new Types.ObjectId(subjectId as string), 
-            questionText, options, correctAnswer, explanation, imageUrl 
+            type: type || 'multiple_choice',
+            questionText, 
+            imageUrl,
+            explanation,
+            options, 
+            correctAnswer, 
+            trueFalseOptions, 
+            shortAnswerCorrect 
         });
+
+        // Cập nhật số lượng câu hỏi cho môn học
+        await Subject.findByIdAndUpdate(subjectId, { $inc: { questionCount: 1 } });
+
         res.status(201).json(question);
-    } catch (error) {
-        res.status(500).json({ message: 'Lỗi khi tạo câu hỏi' });
+    } catch (error: any) {
+        console.error("❌ Error creating question:", error);
+        res.status(500).json({ message: 'Lỗi khi tạo câu hỏi', error: error.message });
     }
 };
 

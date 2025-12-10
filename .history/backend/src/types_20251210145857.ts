@@ -1,3 +1,27 @@
+Dựa trên cấu trúc đề thi mới (2025) mà chúng ta đã thảo luận (gồm 3 phần), và nội dung file cũ của bạn, đây là nội dung file types.ts dành cho Backend (vì tôi thấy bạn đang import mongoose).
+
+Tôi đã thực hiện các thay đổi sau:
+
+Thêm QuestionType.
+
+Cập nhật IQuestion:
+
+Thêm trường type.
+
+Biến options và correctAnswer thành không bắt buộc (?) (vì câu hỏi Tự luận/Đúng Sai không dùng cấu trúc này).
+
+Thêm trueFalseOptions cho Phần II.
+
+Thêm shortAnswerCorrect cho Phần III.
+
+Cập nhật IAttempt để questionId rõ ràng hơn là ObjectId.
+
+Nội dung cập nhật file types.ts (Backend)
+code
+TypeScript
+download
+content_copy
+expand_less
 import { Document, Types } from 'mongoose';
 
 // 1. Định nghĩa các loại câu hỏi (Mới)
@@ -75,3 +99,10 @@ export interface IAttempt extends Document {
   
   createdAt: Date;
 }
+⚠️ Lưu ý quan trọng:
+
+File này chứa import { Document } from 'mongoose', nên nó CHỈ ĐƯỢC DÙNG Ở BACKEND.
+
+Nếu bạn dùng file này ở Frontend (React), trang web sẽ bị lỗi trắng trang (vì trình duyệt không hiểu mongoose).
+
+Nếu bạn cần file types.ts cho Frontend, hãy dùng phiên bản không có mongoose mà tôi đã gửi ở các câu trả lời trước (chỉ dùng interface thuần túy).

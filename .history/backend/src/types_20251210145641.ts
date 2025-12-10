@@ -2,8 +2,12 @@ import { Document } from 'mongoose';
 
 export interface IUser extends Document {
   name: string;
+  email?: string;
   password?: string;
   role: 'student' | 'admin';
+  className?: string;
+  school?: string;
+  banned?: boolean;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -30,17 +34,15 @@ export interface IQuestion extends Document {
   imageUrl?: string;
 }
 
-export interface IAnswer {
-  questionId: Types.ObjectId; // Changed to Types.ObjectId
-  selectedAnswer: string;
-  isCorrect: boolean;
-}
-
 export interface IAttempt extends Document {
-  userId?: Types.ObjectId;
-  subjectId?: Types.ObjectId;
+  userId?: any;
+  subjectId?: string;
   score?: number;
   total?: number;
-  answers: IAnswer[]; // Use the new IAnswer interface
+  answers: {
+    questionId: any;
+    selectedAnswer: string;
+    isCorrect: boolean;
+  }[];
   createdAt?: Date;
 }

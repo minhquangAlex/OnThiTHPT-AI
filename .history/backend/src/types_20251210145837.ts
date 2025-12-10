@@ -2,8 +2,12 @@ import { Document } from 'mongoose';
 
 export interface IUser extends Document {
   name: string;
+  email?: string;
   password?: string;
   role: 'student' | 'admin';
+  className?: string;
+  school?: string;
+  banned?: boolean;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
