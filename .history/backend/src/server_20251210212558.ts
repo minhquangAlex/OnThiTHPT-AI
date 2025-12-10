@@ -76,7 +76,6 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/attempts', attemptRoutes);
 app.use('/api/upload', uploadRoutes);
 
-app.use('/api/exams', examRoutes);
 // ... (Giữ nguyên Error Handlers)
 app.use((req: Request, res: Response, next: NextFunction) => {
     const error = new Error(`Not Found - ${req.originalUrl}`);

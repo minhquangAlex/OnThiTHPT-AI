@@ -15,7 +15,6 @@ import subjectRoutes from './routes/subject_routes';
 import uploadRoutes from './routes/uploadRoutes';
 import userRoutes from './routes/userRoutes';
 import examRoutes from './routes/examRoutes';
-
 dotenv.config();
 connectDB();
 
@@ -76,7 +75,6 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/attempts', attemptRoutes);
 app.use('/api/upload', uploadRoutes);
 
-app.use('/api/exams', examRoutes);
 // ... (Giữ nguyên Error Handlers)
 app.use((req: Request, res: Response, next: NextFunction) => {
     const error = new Error(`Not Found - ${req.originalUrl}`);

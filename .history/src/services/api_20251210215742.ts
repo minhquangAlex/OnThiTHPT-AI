@@ -160,49 +160,7 @@ const api = {
         console.log(`\x1b[32m[DEBUG Frontend] API Response: ${result.data?.length || 0} questions\x1b[0m`, result.data);
         return result.data || [];
     },
-    getExamsBySubject: async (subjectId: string) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/exams/subject/${subjectId}`, {
-            headers: { 
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-        });
-        if (!response.ok) throw new Error('Lỗi tải danh sách đề thi');
-        return response.json();
-    },
-
-    // 2. Tạo đề ngẫu nhiên
-    generateRandomExam: async (subjectId: string) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/exams/random`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-            body: JSON.stringify({ subjectId })
-        });
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.message || 'Lỗi tạo đề ngẫu nhiên');
-        }
-        return response.json();
-    },
-
-    // 3. Lấy chi tiết đề cố định
-    getExamById: async (examId: string) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/exams/${examId}`, {
-            headers: { 
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-        });
-        if (!response.ok) throw new Error('Lỗi tải đề thi');
-        return response.json();
-    },
+    
 
     // Admin: fetch users (paginated)
     getUsers: async (page = 1, limit = 20, search = '') => {

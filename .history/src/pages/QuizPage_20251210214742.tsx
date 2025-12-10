@@ -80,15 +80,11 @@ const QuizPage: React.FC = () => {
         setQuiz(questionsData, subjectName);
         setQuizDuration(duration);
         
-      } catch (error: any) { // Thêm : any
-    console.error("Lỗi tải đề:", error);
-    
-    // 👇 SỬA ĐOẠN NÀY: Lấy message từ error thay vì text cứng
-    const msg = error.message || "Có lỗi xảy ra khi tạo đề thi.";
-    alert(msg);
-    
-    navigate('/dashboard');
-} finally {
+      } catch (error) {
+        console.error(error);
+        alert("Lỗi tạo đề.");
+        navigate('/dashboard');
+      } finally {
         setIsLoading(false);
       }
     };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
-import { Grid, X, ArrowLeft, ArrowRight, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Grid, X, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react'; // Cài: npm install lucide-react
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { TimerIcon } from '../components/icons/CoreIcons';
@@ -11,18 +11,20 @@ import { useQuizStore } from '../store/useQuizStore';
 import NgrokImage from '../components/NgrokImage';
 import { Question } from '../types';
 import QuestionPalette from '../components/QuestionPalette';
-import { getFullImageUrl } from '../utils/imageHelper';
+
+// Hàm helper lấy ảnh
+const getFullImageUrl = (imagePath?: string) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  const apiUrl = (import.meta as any).env.VITE_API_URL || 'https://undisputedly-nonsocialistic-sheba.ngrok-free.dev/api';
+  const rootUrl = apiUrl.replace(/\/api\/?$/, '');
+  return `${rootUrl}${imagePath}`;
+};
 
 const QuizPage: React.FC = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
   
-  const mode = searchParams.get('mode');
-  const examId = searchParams.get('examId');
-  const subjectName = (location.state as any)?.subjectName;
-
   const {
     questions,
     currentQuestionIndex,
@@ -30,78 +32,52 @@ const QuizPage: React.FC = () => {
     setQuiz,
     selectAnswer,
     nextQuestion,
-    prevQuestion,
-    goToQuestion,
+    prevQuestion, // <--- MỚI
+    goToQuestion, // <--- MỚI
     submitQuiz,
     resetQuiz,
   } = useQuizStore();
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-  const [quizDuration, setQuizDuration] = useState(0); 
-  const [examWarning, setExamWarning] = useState<string | null>(null);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false); // State bật tắt bảng câu hỏi
 
-  const handleTimeout = () => { if (subjectId && !isSubmitting) handleSubmitQuiz(); };
+  const handleTimeout = () => {
+    if (subjectId) {
+        (async () => {
+          if (isSubmitting) return;
+          setIsSubmitting(true);
+          const attemptId = await submitQuiz(subjectId);
+          if (attemptId) navigate(`/results/${attemptId}`, { state: { fromQuizCompletion: true } });
+          else navigate('/dashboard');
+        })();
+    }
+  };
   
-  const { displayTime, resetTimer } = useTimer(quizDuration, handleTimeout);
+  const { displayTime } = useTimer(questions.length * 60 || 600, handleTimeout);
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!subjectId) return;
-      setIsLoading(true);
-      
-      try {
-        let questionsData: Question[] = [];
-        let duration = 0; 
-
-        if (mode === 'random') {
-            const res = await api.generateRandomExam(subjectId);
-            questionsData = res.questions;
-            duration = res.duration * 60;
-            if (res.isFullExam === false) {
-                setExamWarning(`Lưu ý: Ngân hàng câu hỏi thiếu. Đề rút gọn còn ${res.totalQuestions} câu. Thời gian: ${res.duration} phút.`);
-            }
-        } else if (mode === 'fixed' && examId) {
-            const res = await api.getExamById(examId);
-            questionsData = res.questions;
-            duration = res.duration * 60;
-        } else {
-            questionsData = await api.getQuestions(subjectId);
-            duration = questionsData.length * 60; 
+    const startQuiz = async () => {
+      if (subjectId && subjectId !== 'ai-generated') {
+        setIsLoading(true);
+        try {
+          const fetchedQuestions = await api.getQuestions(subjectId);
+          setQuiz(fetchedQuestions, '');
+        } catch (error) {
+          console.error("Failed:", error);
+          alert("Lỗi tải câu hỏi.");
+          navigate('/dashboard'); 
+        } finally {
+          setIsLoading(false);
         }
-
-        if (questionsData.length === 0) {
-            alert("Chưa có câu hỏi nào.");
-            navigate('/dashboard');
-            return;
-        }
-
-        setQuiz(questionsData, subjectName);
-        setQuizDuration(duration);
-        
-      } catch (error: any) { // Thêm : any
-    console.error("Lỗi tải đề:", error);
-    
-    // 👇 SỬA ĐOẠN NÀY: Lấy message từ error thay vì text cứng
-    const msg = error.message || "Có lỗi xảy ra khi tạo đề thi.";
-    alert(msg);
-    
-    navigate('/dashboard');
-} finally {
+      } else {
         setIsLoading(false);
       }
     };
-
-    resetQuiz();
-    loadData();
+    if (subjectId !== 'ai-generated') resetQuiz();
+    startQuiz();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subjectId, mode, examId]);
-
-  useEffect(() => {
-      if (quizDuration > 0) resetTimer(quizDuration);
-  }, [quizDuration]);
-
+  }, [subjectId]);
 
   const currentQuestion = questions[currentQuestionIndex];
   const selectedAnswerRaw = currentQuestion ? answers[currentQuestion._id] : null;
@@ -114,11 +90,24 @@ const QuizPage: React.FC = () => {
     else navigate('/dashboard');
   };
 
-  const handleNext = () => { if (currentQuestionIndex < questions.length - 1) nextQuestion(); };
-  const handlePrev = () => { if (currentQuestionIndex > 0) prevQuestion(); };
-  const handlePaletteSelect = (index: number) => { goToQuestion(index); setIsPaletteOpen(false); };
+  // Nút điều hướng
+  const handleNext = () => {
+    if (currentQuestionIndex < questions.length - 1) nextQuestion();
+  };
+  
+  const handlePrev = () => {
+    if (currentQuestionIndex > 0) prevQuestion();
+  };
 
+  // Chọn câu từ bảng
+  const handlePaletteSelect = (index: number) => {
+    goToQuestion(index);
+    setIsPaletteOpen(false);
+  };
+
+  // --- RENDER GIAO DIỆN NHẬP LIỆU ---
   const renderAnswerInput = (question: Question) => {
+    // 1. Trắc nghiệm
     if (!question.type || question.type === 'multiple_choice') {
       return (
         <div className="space-y-3">
@@ -134,7 +123,9 @@ const QuizPage: React.FC = () => {
             >
               <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mr-3 border ${
                  selectedAnswerRaw === key ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 text-slate-500 border-slate-300'
-              }`}>{key}</span>
+              }`}>
+                {key}
+              </span>
               <span className="text-slate-800 dark:text-slate-200 font-medium">
                 {question.options?.[key as keyof typeof question.options]}
               </span>
@@ -143,6 +134,7 @@ const QuizPage: React.FC = () => {
         </div>
       );
     }
+    // 2. Đúng Sai
     if (question.type === 'true_false') {
       let currentTF: any = { a: null, b: null, c: null, d: null };
       try { if (selectedAnswerRaw) currentTF = JSON.parse(selectedAnswerRaw); } catch {}
@@ -164,6 +156,7 @@ const QuizPage: React.FC = () => {
         </div>
       );
     }
+    // 3. Trả lời ngắn
     if (question.type === 'short_answer') {
       return (
         <div className="mt-4">
@@ -182,16 +175,8 @@ const QuizPage: React.FC = () => {
 
   return (
     <div className="container mx-auto py-4 px-4 sm:py-8 relative">
-      {examWarning && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r shadow-sm flex items-start animate-fade-in-down">
-          <AlertTriangle className="w-5 h-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
-          <div>
-            <h4 className="font-bold text-yellow-800 text-sm">Thông báo hệ thống</h4>
-            <p className="text-sm text-yellow-700 mt-1">{examWarning}</p>
-          </div>
-        </div>
-      )}
-
+      
+      {/* --- MODAL BẢNG CÂU HỎI (Trượt từ phải sang) --- */}
       {isPaletteOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsPaletteOpen(false)}></div>
@@ -202,23 +187,27 @@ const QuizPage: React.FC = () => {
                 <X className="w-6 h-6 text-slate-500" />
               </button>
             </div>
+            {/* Component Bảng câu hỏi */}
             <QuestionPalette 
               totalQuestions={questions.length}
               currentIndex={currentQuestionIndex}
               answers={answers}
               questions={questions}
               onSelect={handlePaletteSelect}
-              onSubmit={() => { if(window.confirm('Nộp bài?')) handleSubmitQuiz(); }}
+              onSubmit={handleSubmitQuiz}
             />
           </div>
         </div>
       )}
 
+      {/* --- GIAO DIỆN CHÍNH --- */}
       <div className="max-w-3xl mx-auto">
         <Card className="min-h-[500px] flex flex-col relative shadow-xl border-0">
+          
+          {/* Header */}
           <div className="p-4 sm:p-6 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg sticky top-0 z-10">
             <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Câu {currentQuestionIndex + 1} / {questions.length}</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Câu hỏi {currentQuestionIndex + 1} / {questions.length}</span>
                 <span className={`text-xs font-bold px-2 py-0.5 rounded inline-block uppercase w-fit ${
                   currentQuestion.type === 'true_false' ? 'bg-purple-100 text-purple-700' :
                   currentQuestion.type === 'short_answer' ? 'bg-orange-100 text-orange-700' :
@@ -233,31 +222,42 @@ const QuizPage: React.FC = () => {
                 <TimerIcon className="h-5 w-5" />
                 <span>{displayTime}</span>
               </div>
-              <button onClick={() => setIsPaletteOpen(true)} className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm flex items-center justify-center gap-2" title="Mở danh sách">
+              <button onClick={() => setIsPaletteOpen(true)} className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm flex items-center justify-center gap-2" title="Mở danh sách câu hỏi">
                 <Grid className="w-5 h-5" />
                 <span className="hidden sm:inline text-sm font-medium">Danh sách</span>
               </button>
             </div>
           </div>
 
+          {/* Nội dung chính */}
           <div className="p-6 sm:p-8 flex-1">
             {currentQuestion.imageUrl && (
               <div className="mb-6 flex justify-center">
                 <NgrokImage src={getFullImageUrl(currentQuestion.imageUrl) || ''} className="max-h-[350px] max-w-full object-contain rounded-lg border shadow-sm bg-white" />
               </div>
             )}
-            {currentQuestion.questionText && <p className="text-lg sm:text-xl mb-8 whitespace-pre-wrap leading-relaxed font-medium text-slate-800 dark:text-slate-100">{currentQuestion.questionText}</p>}
+
+            {currentQuestion.questionText && (
+              <p className="text-lg sm:text-xl mb-8 whitespace-pre-wrap leading-relaxed font-medium text-slate-800 dark:text-slate-100">
+                {currentQuestion.questionText}
+              </p>
+            )}
+
             {renderAnswerInput(currentQuestion)}
           </div>
 
+          {/* Footer Navigation */}
           <div className="p-4 sm:p-6 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-b-lg">
+            {/* Thanh tiến độ */}
             <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mb-6 overflow-hidden">
                 <div className="bg-indigo-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
             </div>
+            
             <div className="flex justify-between items-center gap-4">
               <Button onClick={handlePrev} variant="secondary" disabled={currentQuestionIndex === 0} className="w-32 flex items-center justify-center gap-2">
                 <ArrowLeft className="w-4 h-4" /> Quay lại
               </Button>
+
               {currentQuestionIndex === questions.length - 1 ? (
                 <Button onClick={handleSubmitQuiz} className="w-32 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2">
                   <CheckCircle className="w-4 h-4" /> Nộp bài

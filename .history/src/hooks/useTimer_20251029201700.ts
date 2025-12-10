@@ -2,40 +2,40 @@ import { useState, useEffect, useRef } from 'react';
 
 export const useTimer = (duration: number, onTimeout: () => void) => {
   const [seconds, setSeconds] = useState(duration);
-  const timeoutCallback = useRef(onTimeout);
+  const timeoutCallback = useRef(onTimeout); // Use a ref to hold the callback
 
-  // Cập nhật ref khi callback thay đổi
+  // When the component re-renders with a new callback, update the ref
   useEffect(() => {
     timeoutCallback.current = onTimeout;
   }, [onTimeout]);
 
-  // Tự động reset khi prop 'duration' thay đổi (Logic cũ của bạn - Rất tốt)
+  // When the input duration changes, reset the timer state
   useEffect(() => {
     setSeconds(duration);
   }, [duration]);
 
-  // Logic đếm ngược
+  // The interval effect
   useEffect(() => {
-    if (seconds <= 0) return;
+    // Don't start the timer if the duration is not positive
+    if (duration <= 0) {
+      return;
+    }
 
     const intervalId = setInterval(() => {
       setSeconds(s => {
         if (s <= 1) {
           clearInterval(intervalId);
-          timeoutCallback.current();
+          timeoutCallback.current(); // Call the latest callback from the ref
           return 0;
         }
         return s - 1;
       });
     }, 1000);
 
+    // The cleanup function clears the interval
     return () => clearInterval(intervalId);
-  }, [seconds]); // Sửa dependency thành seconds để timer chạy mượt hơn khi reset
 
-  // --- HÀM MỚI: Cho phép reset thủ công từ bên ngoài ---
-  const resetTimer = (newSeconds: number) => {
-    setSeconds(newSeconds);
-  };
+  }, [duration]); // This effect should only re-run when the total duration changes
 
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
@@ -43,6 +43,5 @@ export const useTimer = (duration: number, onTimeout: () => void) => {
   return {
     displayTime: `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`,
     seconds,
-    resetTimer, // <--- BẮT BUỘC PHẢI RETURN HÀM NÀY
   };
 };
