@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -6,6 +7,7 @@ import Button from './Button';
 import Card from './Card';
 import Spinner from './Spinner';
 
+// ... (interfaces remain the same)
 interface Attempt {
   _id: string;
   userId: { name: string } | null;
@@ -71,14 +73,16 @@ const AttemptManagement: React.FC<AttemptManagementProps> = ({ onAttemptDeleted 
     fetchData();
   }, []);
 
-  // Khi chọn môn học, tải danh sách câu hỏi để sắp xếp biểu đồ
+  // When selectedSubject changes, fetch the canonical questions list for that subject
   useEffect(() => {
     const loadQuestions = async () => {
       if (!selectedSubject) return;
       try {
+        // api.getQuestions expects subjectId (slug or _id depending on implementation)
         const qs = await api.getQuestions(selectedSubject);
         setQuestionsForSubject(qs || []);
       } catch (err) {
+        // silently ignore; fallback logic will use createdAt
         setQuestionsForSubject([]);
       }
     };
@@ -97,19 +101,25 @@ const AttemptManagement: React.FC<AttemptManagementProps> = ({ onAttemptDeleted 
     }
   };
 
-  if (loading) return <Spinner />;
-  if (error) return <p className="text-red-500">{error}</p>;
+  if (loading) {
+    return <Spinner />;
+  }
 
-  // Xử lý dữ liệu biểu đồ
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
+  }
+
+  // Build an order map from the canonical questions list (if available)
   const questionOrderMap = new Map<string, number>();
   questionsForSubject.forEach((q, idx) => {
     const id = q._id || q.id || q.questionId;
     if (id) questionOrderMap.set(id.toString(), idx);
   });
 
+  // Filter by subject and sort using the canonical order if present; otherwise fallback to createdAt
   const filteredQuestionStats = questionStats
     .filter(stat => stat.subjectId === selectedSubject)
-    .slice()
+    .slice() // copy
     .sort((a, b) => {
       const ia = questionOrderMap.has(a.questionId?.toString()) ? questionOrderMap.get(a.questionId.toString())! : null;
       const ib = questionOrderMap.has(b.questionId?.toString()) ? questionOrderMap.get(b.questionId.toString())! : null;
@@ -122,10 +132,13 @@ const AttemptManagement: React.FC<AttemptManagementProps> = ({ onAttemptDeleted 
     })
     .map((s, idx) => ({
       ...s,
+      // convert 0..1 -> 0..100 and round
       correctPercentage: Math.round((s.correctPercentage ?? 0) * 100),
+      // short label: Câu 1, Câu 2, ...
       label: `Câu ${idx + 1}`,
     }));
 
+  // Custom tooltip to show the full question text on hover
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length > 0) {
       const data = payload[0].payload;
@@ -148,7 +161,7 @@ const AttemptManagement: React.FC<AttemptManagementProps> = ({ onAttemptDeleted 
       </p>
 
       <div className="space-y-8">
-        {/* Biểu đồ thống kê câu hỏi */}
+        {/* Question Stats with Dropdown and Chart */}
         <div>
           <h3 className="text-xl font-semibold mb-2">Thống kê câu hỏi</h3>
           <div className="mb-4">
@@ -178,35 +191,33 @@ const AttemptManagement: React.FC<AttemptManagementProps> = ({ onAttemptDeleted 
                       width={150} 
                       tick={{ fontSize: 12, fill: '#cbd5e1' }}
                     />
-                    <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
+                    <Tooltip content={<CustomTooltip />} formatter={(value) => `${value}%`} />
                   <Legend />
                     <Bar dataKey="correctPercentage" name="Tỷ lệ đúng" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-slate-500 italic">Không có dữ liệu thống kê cho môn học này.</p>
+            <p>Không có dữ liệu thống kê cho môn học này.</p>
           )}
         </div>
 
-        {/* Bảng điểm trung bình môn */}
+        {/* Subject Average Scores */}
         <div>
           <h3 className="text-xl font-semibold mb-2">Điểm trung bình môn học</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+            <table className="w-full text-left">
+              <thead className="border-b dark:border-slate-700">
                 <tr>
-                  <th className="p-3">Môn học</th>
-                  <th className="p-3">Điểm trung bình</th>
+                  <th className="p-2">Môn học</th>
+                  <th className="p-2">Điểm trung bình</th>
                 </tr>
               </thead>
               <tbody>
                 {subjectStats.map((stat) => (
                   <tr key={stat.subjectId} className="border-b dark:border-slate-700">
-                    <td className="p-3">{stat.subjectName}</td>
-                    <td className="p-3 font-bold text-indigo-600 dark:text-indigo-400">
-                      {stat.averageScore.toFixed(2)}
-                    </td>
+                    <td className="p-2">{stat.subjectName}</td>
+                    <td className="p-2">{stat.averageScore.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -214,48 +225,31 @@ const AttemptManagement: React.FC<AttemptManagementProps> = ({ onAttemptDeleted 
           </div>
         </div>
 
-        {/* Bảng kết quả chi tiết */}
+        {/* Detailed Results */}
         <div>
           <h3 className="text-xl font-semibold mb-2">Kết quả chi tiết các lượt làm bài</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+            <table className="w-full text-left">
+              <thead className="border-b dark:border-slate-700">
                 <tr>
-                  <th className="p-3 font-semibold text-slate-700 dark:text-slate-200">Người làm</th>
-                  <th className="p-3 font-semibold text-slate-700 dark:text-slate-200">Môn học</th>
-                  <th className="p-3 font-semibold text-slate-700 dark:text-slate-200">Điểm (Thang 10)</th>
-                  <th className="p-3 font-semibold text-slate-700 dark:text-slate-200">Ngày làm</th>
-                  <th className="p-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Hành động</th>
+                  <th className="p-2">Người làm</th>
+                  <th className="p-2">Môn học</th>
+                  <th className="p-2">Điểm</th>
+                  <th className="p-2">Ngày làm</th>
+                  <th className="p-2">Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 {attempts.map((attempt) => (
-                  <tr key={attempt._id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="p-3 font-medium text-slate-900 dark:text-slate-100">
-                      {attempt.userId?.name || 'Không xác định'}
-                    </td>
-                    <td className="p-3">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                        {attempt.subjectId?.name || 'Không xác định'}
-                      </span>
-                    </td>
-                    
-                    {/* --- HIỂN THỊ ĐIỂM SỐ CHUẨN --- */}
-                    <td className="p-3 font-bold text-slate-900 dark:text-white">
-                      {/* Hiển thị trực tiếp score, vì backend đã tính thang 10 */}
-                      {Number(attempt.score).toFixed(2)}
-                    </td>
-                    {/* ------------------------------- */}
-
-                    <td className="p-3 text-sm text-slate-500">
-                      {new Date(attempt.createdAt).toLocaleDateString('vi-VN', {
-                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                      })}
-                    </td>
-                    <td className="p-3 text-right space-x-2">
+                  <tr key={attempt._id} className="border-b dark:border-slate-700">
+                    <td className="p-2">{attempt.userId?.name || 'Không xác định'}</td>
+                    <td className="p-2">{attempt.subjectId?.name || 'Không xác định'}</td>
+                    <td className="p-2">{(attempt.score / attempt.total * 10).toFixed(2)}</td>
+                    <td className="p-2">{new Date(attempt.createdAt).toLocaleDateString()}</td>
+                    <td className="p-2 space-x-2">
                       <button 
                         onClick={() => navigate(`/results/${attempt._id}`)} 
-                        className="text-sm font-medium text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline"
+                        className="text-orange-500 hover:underline"
                       >
                         Xem chi tiết
                       </button>
