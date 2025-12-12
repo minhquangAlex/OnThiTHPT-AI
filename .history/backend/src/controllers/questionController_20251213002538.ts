@@ -102,7 +102,7 @@ export const updateQuestion = async (req: Request, res: Response) => {
         if (explanation) question.explanation = explanation;
         if (imageUrl !== undefined) {question.imageUrl = imageUrl;}
         if (trueFalseOptions !== undefined) question.trueFalseOptions = trueFalseOptions;
-        if (shortAnswerCorrect !== undefined) question.shortAnswerCorrect = shortAnswerCorrect;
+if (shortAnswerCorrect !== undefined) question.shortAnswerCorrect = shortAnswerCorrect;
         await question.save();
         res.json(question);
     } catch (error) {
