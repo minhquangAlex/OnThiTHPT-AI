@@ -190,7 +190,6 @@ const api = {
         }
         return response.json();
     },
-    // Tạo đề thi cố định (Admin)
     createFixedExam: async (data: { subjectId: string; title: string; duration?: number }) => {
         const token = getAuthToken();
         const response = await fetch(`${API_URL}/exams/create`, {

@@ -190,24 +190,7 @@ const api = {
         }
         return response.json();
     },
-    // Tạo đề thi cố định (Admin)
-    createFixedExam: async (data: { subjectId: string; title: string; duration?: number }) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/exams/create`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.message || 'Lỗi tạo đề');
-        }
-        return response.json();
-    },
+    
 
     // 3. Lấy chi tiết đề cố định
     getExamById: async (examId: string) => {

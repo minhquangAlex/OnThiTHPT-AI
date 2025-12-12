@@ -5,7 +5,7 @@ import {
     getExamsBySubject,
     createFixedExam
 } from '../controllers/examController';
-import { protect, admin } from '../middleware/authMiddleware';
+import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -20,6 +20,5 @@ router.post('/random', protect, generateRandomExam);
 // 3. Lấy chi tiết một đề thi cố định (theo ID đề)
 // GET /api/exams/:id
 router.get('/:id', protect, getExamById);
-router.post('/create', protect, admin, createFixedExam);
 
 export default router;

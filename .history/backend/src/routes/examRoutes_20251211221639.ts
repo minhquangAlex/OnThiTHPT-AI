@@ -5,7 +5,7 @@ import {
     getExamsBySubject,
     createFixedExam
 } from '../controllers/examController';
-import { protect, admin } from '../middleware/authMiddleware';
+import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
