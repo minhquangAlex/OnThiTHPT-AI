@@ -1,12 +1,12 @@
-import { FilePlus, Image as ImageIcon } from 'lucide-react'; // Thêm icon
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
-import NgrokImage from '../components/NgrokImage';
 import api from '../services/api';
-import { Question } from '../types';
 import { getFullImageUrl } from '../utils/imageHelper';
+import NgrokImage from '../components/NgrokImage';
+import { Question } from '../types';
+import { FilePlus, Image as ImageIcon, Upload } from 'lucide-react'; // Thêm icon
 
 const SubjectQuestionsPage: React.FC = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
