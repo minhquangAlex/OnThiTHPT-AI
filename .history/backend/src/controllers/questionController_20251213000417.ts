@@ -95,12 +95,11 @@ export const updateQuestion = async (req: Request, res: Response) => {
     try {
         const question = await Question.findById(req.params.id);
         if (!question) return res.status(404).json({ message: 'Không tìm thấy câu hỏi' });
-        const { questionText, options, correctAnswer, explanation,imageUrl } = req.body;
+        const { questionText, options, correctAnswer, explanation, } = req.body;
         if (questionText) question.questionText = questionText;
         if (options) question.options = options;
         if (correctAnswer) question.correctAnswer = correctAnswer;
         if (explanation) question.explanation = explanation;
-        if (imageUrl !== undefined) {question.imageUrl = imageUrl;}
         await question.save();
         res.json(question);
     } catch (error) {
