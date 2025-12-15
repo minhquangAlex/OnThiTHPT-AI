@@ -17,7 +17,7 @@ const ExamQuestionsPage: React.FC = () => {
   const [examInfo, setExamInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // --- STATE QUẢN LÝ SỬA ---
+  // --- STATE QUẢN LÝ SỬA (Copy từ SubjectQuestionsPage) ---
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({ 
     questionText: '', 
@@ -51,7 +51,7 @@ const ExamQuestionsPage: React.FC = () => {
     load();
   }, [examId]);
 
-  // --- CÁC HÀM XỬ LÝ ---
+  // --- CÁC HÀM XỬ LÝ (GIỐNG SubjectQuestionsPage) ---
 
   const handleDelete = async (id: string) => {
     if (!confirm('CẢNH BÁO: Hành động này sẽ XÓA VĨNH VIỄN câu hỏi khỏi ngân hàng câu hỏi (không chỉ khỏi đề này). Tiếp tục?')) return;
@@ -303,19 +303,7 @@ const ExamQuestionsPage: React.FC = () => {
                                             />
                                         </div>
                                     )}
-
-                                    {/* 👇 FORM SỬA GIẢI THÍCH (MỚI) 👇 */}
-                                    <div className="mt-3">
-                                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Giải thích chi tiết:</label>
-                                        <textarea
-                                            value={editForm.explanation}
-                                            onChange={(e) => setEditForm({ ...editForm, explanation: e.target.value })}
-                                            className="w-full p-2 border rounded bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800 text-sm focus:ring-yellow-500"
-                                            rows={3}
-                                            placeholder="Nhập lời giải hoặc hướng dẫn..."
-                                        />
-                                    </div>
-                                    {/* ---------------------------------- */}
+                                    
                                 </div>
                                 ) : (
                                 <div>
@@ -360,15 +348,6 @@ const ExamQuestionsPage: React.FC = () => {
                                             ))}
                                         </div>
                                     )}
-                                    
-                                    {/* 👇 HIỂN THỊ GIẢI THÍCH (MỚI) 👇 */}
-                                    {q.explanation && (
-                                        <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-400 text-sm text-slate-700 dark:text-slate-300 rounded-r">
-                                            <p className="font-bold text-xs text-yellow-700 dark:text-yellow-500 mb-1 flex items-center gap-1">💡 GIẢI THÍCH:</p>
-                                            <div className="whitespace-pre-wrap leading-relaxed">{q.explanation}</div>
-                                        </div>
-                                    )}
-                                    {/* -------------------------------- */}
                                 </div>
                                 )}
                             </td>
