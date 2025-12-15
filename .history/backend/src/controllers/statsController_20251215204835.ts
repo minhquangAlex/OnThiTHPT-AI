@@ -1,10 +1,7 @@
 import { Request, Response } from 'express';
 import { Attempt } from '../models/Attempt';
-import { Subject } from '../models/Subject'; // Import Subject model
-import { PipelineStage } from 'mongoose';  // ← THÊM: Import PipelineStage cho TS type safety
+import { Subject } from '../models/Subject';
 
-// Return statistics. Currently we compute today's attempts by counting
-// Attempt documents with createdAt between start and end of today.
 export const getStats = async (_req: Request, res: Response) => {
   try {
     const now = new Date();
@@ -23,15 +20,12 @@ export const getStats = async (_req: Request, res: Response) => {
 // Get average score for each subject
 export const getSubjectStats = async (req: Request, res: Response) => {
   try {
-    // 1. Fetch all necessary data
     const attempts = await Attempt.find({}).lean();
     const subjects = await Subject.find({}).lean();
 
-    // 2. Create lookup maps for subjects
     const subjectMapById = new Map(subjects.map(s => [s._id.toString(), s]));
     const subjectMapBySlug = new Map(subjects.map(s => [s.slug, s]));
 
-    // 3. Process stats in JavaScript
     const statsBySubjectId: { [key: string]: { totalScore: number; count: number; name: string; slug: string } } = {};
 
     for (const attempt of attempts) {
@@ -50,17 +44,20 @@ export const getSubjectStats = async (req: Request, res: Response) => {
           statsBySubjectId[subjectKey] = { totalScore: 0, count: 0, name: subjectDoc.name, slug: subjectDoc.slug };
         }
 
-        const score = attempt.score ?? 0;
-        const total = attempt.total ?? 0;
-        const scaledScore = total > 0 ? (score / total) * 10 : 0;
-        statsBySubjectId[subjectKey].totalScore += scaledScore;
+        // --- SỬA ĐOẠN NÀY ---
+        // Lấy trực tiếp điểm số (vì attempt.score giờ đã là thang 10 chuẩn)
+        // Nếu điểm cũ bị lỗi > 10, ta chặn trần ở 10 để không làm hỏng thống kê
+        let score = Number(attempt.score) || 0;
+        if (score > 10) score = 10; // Fallback an toàn cho data rác cũ
+
+        statsBySubjectId[subjectKey].totalScore += score;
         statsBySubjectId[subjectKey].count++;
+        // --------------------
       }
     }
 
-    // 4. Format the final result
     const finalStats = Object.entries(statsBySubjectId).map(([subjectId, data]) => ({
-      subjectId: data.slug, // Use slug for consistency in the frontend
+      subjectId: data.slug,
       subjectName: data.name,
       averageScore: data.count > 0 ? data.totalScore / data.count : 0,
     }));
@@ -72,26 +69,15 @@ export const getSubjectStats = async (req: Request, res: Response) => {
   }
 };
 
-// Get statistics for each question (sửa để hỗ trợ per subject)
 export const getQuestionStats = async (req: Request, res: Response) => {
   try {
-    const { subjectId } = req.params;  // Optional: slug hoặc _id của subject
-    const matchStage: PipelineStage[] = [{ $unwind: '$answers' }];  // ← SỬA: Type PipelineStage[] để TS OK
-    if (subjectId) {
-      const subject = await Subject.findOne({ $or: [{ slug: subjectId }, { _id: subjectId }] });  // Tìm bằng slug hoặc _id
-      if (!subject) {
-        return res.json({ message: 'Không có dữ liệu thống kê cho môn học này.', data: [] });
-      }
-      matchStage.push({ $match: { subjectId: subject._id } } as PipelineStage);  // ← SỬA: Cast as PipelineStage để TS chấp nhận $match
-    }
-
     const stats = await Attempt.aggregate([
-      ...matchStage,
+      { $unwind: '$answers' },
       {
         $group: {
           _id: '$answers.questionId',
           totalAttempts: { $sum: 1 },
-          correctAttempts: { $sum: { $cond: [{ $eq: ['$answers.isCorrect', true] }, 1, 0] } },
+          correctAttempts: { $sum: { $cond: ['$answers.isCorrect', 1, 0] } },
         },
       },
       {
@@ -102,29 +88,33 @@ export const getQuestionStats = async (req: Request, res: Response) => {
           as: 'question',
         },
       },
-      { $unwind: { path: '$question', preserveNullAndEmptyArrays: true } },
+      { $unwind: '$question' },
       {
-        $match: { 'question._id': { $exists: true } } as PipelineStage,  // ← SỬA: Cast as PipelineStage cho $match này
+        $lookup: {
+          from: 'subjects',
+          localField: 'question.subjectId',
+          foreignField: '_id',
+          as: 'subject',
+        },
       },
+      { $unwind: { path: '$subject', preserveNullAndEmptyArrays: true } },
       {
         $project: {
           _id: 0,
           questionId: '$_id',
           questionText: '$question.questionText',
-          subjectId: '$question.subjectId',
+          subjectId: '$subject.slug',
+          questionCreatedAt: { $toDate: '$question._id' },
           totalAttempts: 1,
           correctAttempts: 1,
           correctPercentage: {
-            $cond: [{ $eq: ['$totalAttempts', 0] }, 0, { $multiply: [{ $divide: ['$correctAttempts', '$totalAttempts'] }, 100] }],  // % thay vì fraction
+            $cond: [{ $eq: ['$totalAttempts', 0] }, 0, { $divide: ['$correctAttempts', '$totalAttempts'] }],
           },
         },
       },
-      { $sort: { correctPercentage: 1 } },
+      { $sort: { subjectId: 1, questionCreatedAt: 1 } },
     ]);
 
-    if (stats.length === 0) {
-      return res.json({ message: 'Không có dữ liệu thống kê cho môn học này.', data: [] });
-    }
     res.json(stats);
   } catch (error) {
     console.error('Error fetching question stats:', error);

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createAttempt, deleteAllAttempts, deleteAttempt, getAllAttempts, getAttemptById, getMyAttempts ,recalculateAllScores } from '../controllers/attemptController';
+import { createAttempt, deleteAllAttempts, deleteAttempt, getAllAttempts, getAttemptById, getMyAttempts } from '../controllers/attemptController';
 import { admin, protect } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -9,8 +9,6 @@ router.route('/all').delete(protect, admin, deleteAllAttempts);
 
 // User endpoint to get own attempts (cho trang cá nhân)
 router.route('/my-attempts').get(protect, getMyAttempts);
-
-router.route('/recalculate').post(protect, admin, recalculateAllScores);
 
 // Public endpoint for recording attempts
 router.post('/', createAttempt);

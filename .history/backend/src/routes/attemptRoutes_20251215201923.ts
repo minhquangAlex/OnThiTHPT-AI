@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createAttempt, deleteAllAttempts, deleteAttempt, getAllAttempts, getAttemptById, getMyAttempts ,recalculateAllScores } from '../controllers/attemptController';
+import { createAttempt, deleteAllAttempts, deleteAttempt, getAllAttempts, getAttemptById, getMyAttempts } from '../controllers/attemptController';
 import { admin, protect } from '../middleware/authMiddleware';
 
 const router = Router();
