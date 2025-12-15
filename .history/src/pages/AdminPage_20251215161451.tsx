@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import AdminUserManagement from '../components/admin/AdminUserManagement';
 import api from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -91,6 +92,8 @@ const AdminPage: React.FC = () => {
         </Card>
       </div>
 
+      <AdminUserManagement />
+
       <Card className="p-6">
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold">Quản lý nội dung</h2>
@@ -149,7 +152,10 @@ const AdminPage: React.FC = () => {
                       <td className="p-2">
                         <Button
                           size="sm"
-                          onClick={() => navigate(`/admin/questions/${s._id}`, { state: { subjectName: s.name } })}
+                          onClick={() => {
+    console.log(`\x1b[32m[DEBUG Frontend] Clicking edit for subject: ${s.name}, ID: ${s._id}\x1b[0m`);  // Log
+    navigate(`/admin/questions/${s._id}`, { state: { subjectName: s.name } });
+  }}
                         >
                           Chỉnh nội dung
                         </Button>

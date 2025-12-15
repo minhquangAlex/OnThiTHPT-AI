@@ -17,7 +17,6 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ExamSelectionPage from './pages/ExamSelectionPage'; // <--- 1. IMPORT MỚI
 import SubjectExamsPage from './pages/SubjectExamsPage';
 import ExamQuestionsPage from './pages/ExamQuestionsPage';
-
 const App: React.FC = () => {
   const { user } = useAuthStore();
 
@@ -47,7 +46,6 @@ const App: React.FC = () => {
             <Route path="/admin/questions/new" element={<ProtectedRoute><NewQuestionPage /></ProtectedRoute>} />
             <Route path="/admin/questions/:subjectId" element={<ProtectedRoute><SubjectQuestionsPage /></ProtectedRoute>} />
             <Route path="/admin/exams/:subjectId" element={<ProtectedRoute><SubjectExamsPage /></ProtectedRoute>} />
-            <Route path="/admin/exams/:subjectId/view/:examId" element={<ProtectedRoute><ExamQuestionsPage /></ProtectedRoute>} />          
           </Routes>
         </main>
         {user && <AITutor />}

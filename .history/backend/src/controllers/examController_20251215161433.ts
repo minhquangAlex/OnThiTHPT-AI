@@ -129,7 +129,7 @@ export const generateRandomExam = async (req: Request, res: Response) => {
 
 export const createFixedExam = async (req: Request, res: Response) => {
     try {
-        const { subjectId, title, duration, questions } = req.body;
+        const { subjectId, title, duration } = req.body;
 
         // 1. Tìm môn học
         let subject = await Subject.findOne({ 
@@ -137,44 +137,37 @@ export const createFixedExam = async (req: Request, res: Response) => {
         });
         if (!subject) return res.status(404).json({ message: 'Subject not found' });
 
-        let finalQuestionIds: any[] = [];
+        const config = EXAM_CONFIG[subject.slug] || EXAM_CONFIG['default'];
 
-        // 2. PHÂN LOẠI: THỦ CÔNG HAY NGẪU NHIÊN?
-        if (questions && Array.isArray(questions) && questions.length > 0) {
-            // --- CÁCH A: THỦ CÔNG (Frontend gửi ID câu hỏi lên) ---
-            finalQuestionIds = questions;
-            console.log(`[Exam] Creating MANUAL exam with ${finalQuestionIds.length} questions`);
-        } else {
-            // --- CÁCH B: NGẪU NHIÊN (Server tự bốc) ---
-            console.log(`[Exam] Creating RANDOM exam`);
-            const config = EXAM_CONFIG[subject.slug] || EXAM_CONFIG['default'];
+        // 2. Lấy câu hỏi từ kho (Giống logic random)
+        const p1 = await Question.aggregate([
+            { $match: { subjectId: subject._id, type: 'multiple_choice' } },
+            { $sample: { size: config.structure.multiple_choice } }
+        ]);
+        const p2 = await Question.aggregate([
+            { $match: { subjectId: subject._id, type: 'true_false' } },
+            { $sample: { size: config.structure.true_false } }
+        ]);
+        const p3 = await Question.aggregate([
+            { $match: { subjectId: subject._id, type: 'short_answer' } },
+            { $sample: { size: config.structure.short_answer } }
+        ]);
 
-            const p1 = await Question.aggregate([
-                { $match: { subjectId: subject._id, type: 'multiple_choice' } },
-                { $sample: { size: config.structure.multiple_choice } }
-            ]);
-            const p2 = await Question.aggregate([
-                { $match: { subjectId: subject._id, type: 'true_false' } },
-                { $sample: { size: config.structure.true_false } }
-            ]);
-            const p3 = await Question.aggregate([
-                { $match: { subjectId: subject._id, type: 'short_answer' } },
-                { $sample: { size: config.structure.short_answer } }
-            ]);
+        const allQuestions = [...p1, ...p2, ...p3];
+        
+        // Chỉ lấy ID của câu hỏi để lưu
+        const questionIds = allQuestions.map(q => q._id);
 
-            finalQuestionIds = [...p1, ...p2, ...p3].map(q => q._id);
-        }
-
-        if (finalQuestionIds.length === 0) {
+        if (questionIds.length === 0) {
             return res.status(400).json({ message: 'Không đủ câu hỏi để tạo đề!' });
         }
 
         // 3. Lưu vào bảng Exam
         const newExam = await Exam.create({
-            title: title || `Đề thi ${subject.name} - ${new Date().toLocaleDateString()}`,
+            title: title || `Đề thi ${subject.name} - #${Date.now()}`,
             subjectId: subject._id,
-            questions: finalQuestionIds,
-            duration: duration || 45,
+            questions: questionIds,
+            duration: duration || config.duration,
             type: 'fixed'
         });
 

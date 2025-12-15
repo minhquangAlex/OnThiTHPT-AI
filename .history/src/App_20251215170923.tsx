@@ -47,7 +47,6 @@ const App: React.FC = () => {
             <Route path="/admin/questions/new" element={<ProtectedRoute><NewQuestionPage /></ProtectedRoute>} />
             <Route path="/admin/questions/:subjectId" element={<ProtectedRoute><SubjectQuestionsPage /></ProtectedRoute>} />
             <Route path="/admin/exams/:subjectId" element={<ProtectedRoute><SubjectExamsPage /></ProtectedRoute>} />
-            <Route path="/admin/exams/:subjectId/view/:examId" element={<ProtectedRoute><ExamQuestionsPage /></ProtectedRoute>} />          
           </Routes>
         </main>
         {user && <AITutor />}

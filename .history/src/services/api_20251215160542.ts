@@ -524,21 +524,7 @@ const api = {
             throw error; // Ném lỗi để UserProfilePage có thể xử lý
         }
     },
-    recalculateScores: async () => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/attempts/recalculate`, {
-            method: 'POST',
-            headers: { 
-                Authorization: `Bearer ${token}`, 
-                ...NGROK_SKIP_HEADER 
-            },
-        });
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.message || 'Không thể tính lại điểm');
-        }
-        return response.json();
-    },
+    
 };
 
 export default api;

@@ -221,7 +221,7 @@ const api = {
         });
         if (!response.ok) throw new Error('Lỗi xóa đề thi');
         return response.json();
-    },
+    }
 
     // 3. Lấy chi tiết đề cố định
     getExamById: async (examId: string) => {
@@ -523,21 +523,6 @@ const api = {
             console.warn('Endpoint /attempts/my-attempts không khả dụng, sử dụng fallback');
             throw error; // Ném lỗi để UserProfilePage có thể xử lý
         }
-    },
-    recalculateScores: async () => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/attempts/recalculate`, {
-            method: 'POST',
-            headers: { 
-                Authorization: `Bearer ${token}`, 
-                ...NGROK_SKIP_HEADER 
-            },
-        });
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.message || 'Không thể tính lại điểm');
-        }
-        return response.json();
     },
 };
 
