@@ -11,5 +11,6 @@ router.get('/:subjectId', getQuestionsBySubject);
 router.post('/', protect, admin, createQuestion);
 router.put('/:id', protect, admin, updateQuestion);
 router.delete('/:id', protect, admin, deleteQuestion);
+router.post('/import', protect, admin, importQuestions);
 
 export default router;

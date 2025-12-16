@@ -539,33 +539,22 @@ const api = {
         }
         return response.json();
     },
-    deleteQuestionsBulk: async (ids: string[]) => {
+    importQuestions: async (subjectId: string, questions: any[]) => {
         const token = getAuthToken();
-        const response = await fetch(`${API_URL}/questions/batch-delete`, {
+        const response = await fetch(`${API_URL}/questions/import`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
                 ...NGROK_SKIP_HEADER 
             },
-            body: JSON.stringify({ ids })
+            body: JSON.stringify({ subjectId, questions })
         });
+
         if (!response.ok) {
             const err = await response.json();
-            throw new Error(err.message || 'Lỗi xóa câu hỏi');
+            throw new Error(err.message || 'Lỗi khi import câu hỏi');
         }
-        return response.json();
-    },
-    removeQuestionFromExam: async (examId: string, questionId: string) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/exams/${examId}/questions/${questionId}`, {
-            method: 'DELETE',
-            headers: { 
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-        });
-        if (!response.ok) throw new Error('Lỗi khi gỡ câu hỏi khỏi đề');
         return response.json();
     },
 };

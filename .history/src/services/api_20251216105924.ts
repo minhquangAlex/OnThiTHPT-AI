@@ -539,35 +539,6 @@ const api = {
         }
         return response.json();
     },
-    deleteQuestionsBulk: async (ids: string[]) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/questions/batch-delete`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-            body: JSON.stringify({ ids })
-        });
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.message || 'Lỗi xóa câu hỏi');
-        }
-        return response.json();
-    },
-    removeQuestionFromExam: async (examId: string, questionId: string) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/exams/${examId}/questions/${questionId}`, {
-            method: 'DELETE',
-            headers: { 
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-        });
-        if (!response.ok) throw new Error('Lỗi khi gỡ câu hỏi khỏi đề');
-        return response.json();
-    },
 };
 
 export default api;

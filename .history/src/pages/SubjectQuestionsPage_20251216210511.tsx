@@ -1,20 +1,21 @@
-// frontend/src/pages/NewQuestionPage.tsx
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import BatchUpload from '../components/BatchUpload';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import api from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
-// Import QuestionType từ file types vừa sửa
 import { QuestionType } from '../types';
+import BatchUpload from '../components/BatchUpload'; // Import BatchUpload
 
 const NewQuestionPage: React.FC = () => {
   const { token } = useAuthStore();
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState<any[]>([]);
   
-  // Form State
+  // State chung
+  const [uploadMode, setUploadMode] = useState<'manual' | 'batch'>('manual'); // 'manual' hoặc 'batch'
+
+  // --- STATE CỦA FORM THỦ CÔNG ---
   const [subjectId, setSubjectId] = useState('');
   const [qType, setQType] = useState<QuestionType>('multiple_choice');
   const [questionText, setQuestionText] = useState('');
@@ -39,13 +40,13 @@ const NewQuestionPage: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [uploadMode, setUploadMode] = useState<'form' | 'batch'>('form');
 
   useEffect(() => {
     (async () => {
       try {
         const subs = await api.getSubjects();
         setSubjects(subs);
+        // Lấy subjectId từ state khi điều hướng từ trang trước
         const stateSubjectId = (window.history.state?.usr?.state?.subjectId) || subs[0]?.id || '';
         setSubjectId(stateSubjectId);
       } catch (err) {
@@ -136,24 +137,38 @@ const NewQuestionPage: React.FC = () => {
 
   return (
     <div className="container mx-auto py-8 max-w-4xl px-4">
-      <h1 className="text-2xl font-bold mb-6 text-slate-800 dark:text-white">Tạo câu hỏi mới</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Tạo câu hỏi mới</h1>
+        <Button variant="secondary" onClick={() => navigate(-1)}>Quay lại</Button>
+      </div>
+
       <Card className="p-6">
-        <div className="mb-4">
+        {/* --- TAB CHUYỂN ĐỔI CHẾ ĐỘ --- */}
+        <div className="flex border-b mb-6 dark:border-slate-700">
           <button
-            className={`mr-4 ${uploadMode === 'form' ? 'font-bold' : ''}`}
-            onClick={() => setUploadMode('form')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              uploadMode === 'manual' 
+                ? 'text-indigo-600 border-indigo-600 dark:text-indigo-400 dark:border-indigo-400' 
+                : 'text-slate-500 border-transparent hover:text-slate-700 dark:text-slate-400'
+            }`}
+            onClick={() => setUploadMode('manual')}
           >
             Nhập câu hỏi thủ công
           </button>
           <button
-            className={`${uploadMode === 'batch' ? 'font-bold' : ''}`}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              uploadMode === 'batch' 
+                ? 'text-indigo-600 border-indigo-600 dark:text-indigo-400 dark:border-indigo-400' 
+                : 'text-slate-500 border-transparent hover:text-slate-700 dark:text-slate-400'
+            }`}
             onClick={() => setUploadMode('batch')}
           >
             Tải file JSON/CSV
           </button>
         </div>
 
-        {uploadMode === 'form' ? (
+        {/* --- NỘI DUNG FORM --- */}
+        {uploadMode === 'manual' ? (
           <form onSubmit={handleSubmit} className="space-y-6">
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -337,6 +352,7 @@ const NewQuestionPage: React.FC = () => {
 
           </form>
         ) : (
+          /* HIỂN THỊ COMPONENT IMPORT HÀNG LOẠT */
           <BatchUpload />
         )}
       </Card>

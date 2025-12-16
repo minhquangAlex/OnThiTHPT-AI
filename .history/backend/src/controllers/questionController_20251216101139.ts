@@ -124,72 +124,48 @@ export const deleteQuestion = async (req: Request, res: Response) => {
     }
 };
 
-// @desc    Batch upload questions
-// @route   POST /api/questions/batch
+// @desc    Import multiple questions
+// @route   POST /api/questions/import
 // @access  Admin
-export const batchUploadQuestions = async (req: Request, res: Response) => {
+export const importQuestions = async (req: Request, res: Response) => {
     try {
-        const { questions } = req.body; // Expecting an array of questions
+        const { questions, subjectId } = req.body; // questions là mảng []
 
         if (!Array.isArray(questions) || questions.length === 0) {
-            return res.status(400).json({ message: 'Invalid or empty questions array' });
+            return res.status(400).json({ message: 'Dữ liệu không hợp lệ' });
         }
 
-        const createdQuestions = [];
-        for (const questionData of questions) {
-            const { subjectId, type, questionText, imageUrl, explanation, options, correctAnswer, trueFalseOptions, shortAnswerCorrect } = questionData;
-
-            if (!Types.ObjectId.isValid(subjectId)) {
-                return res.status(400).json({ message: `Invalid subject ID for question: ${questionText}` });
-            }
-
-            const question = await Question.create({
-                subjectId: new Types.ObjectId(subjectId),
-                type: type || 'multiple_choice',
-                questionText,
-                imageUrl,
-                explanation,
-                options,
-                correctAnswer,
-                trueFalseOptions,
-                shortAnswerCorrect
-            });
-
-            createdQuestions.push(question);
+        // Kiểm tra môn học
+        if (!Types.ObjectId.isValid(subjectId)) {
+            return res.status(400).json({ message: 'Subject ID không hợp lệ' });
         }
 
-        res.status(201).json({ success: true, data: createdQuestions, message: 'Batch upload successful' });
-    } catch (error) {
-        console.error("[DEBUG Backend] Error in batch upload:", error);
-        res.status(500).json({ success: false, message: 'Batch upload failed', error });
-    }
-};
-// @desc    Delete multiple questions
-// @route   POST /api/questions/batch-delete
-// @access  Admin
-export const deleteQuestionsBulk = async (req: Request, res: Response) => {
-    try {
-        const { ids } = req.body; // ids là mảng các string ['id1', 'id2']
+        // Chuẩn bị dữ liệu
+        const questionsToInsert = questions.map((q: any) => ({
+            ...q,
+            subjectId: new Types.ObjectId(subjectId),
+            // Mặc định type là trắc nghiệm nếu không có
+            type: q.type || 'multiple_choice',
+            // Map các trường khác đảm bảo khớp Schema
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            explanation: q.explanation || '',
+            groupContext: q.groupContext || '', // Đoạn văn bài đọc
+        }));
 
-        if (!ids || !Array.isArray(ids) || ids.length === 0) {
-            return res.status(400).json({ message: 'Danh sách ID không hợp lệ' });
-        }
+        // Lưu hàng loạt (Bulk Insert)
+        const createdQuestions = await Question.insertMany(questionsToInsert);
+        
+        // Cập nhật số lượng câu hỏi cho môn học
+        await Subject.findByIdAndUpdate(subjectId, { $inc: { questionCount: createdQuestions.length } });
 
-        // Thực hiện xóa
-        const result = await Question.deleteMany({ 
-            _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) } 
-        });
-
-        // (Tùy chọn) Cần tính toán lại questionCount của các Subject liên quan
-        // Nhưng để tối ưu hiệu năng, ta có thể bỏ qua hoặc chạy background job sau.
-
-        res.json({ 
-            message: `Đã xóa thành công ${result.deletedCount} câu hỏi`, 
-            deletedCount: result.deletedCount 
+        res.status(201).json({ 
+            message: `Đã import thành công ${createdQuestions.length} câu hỏi`, 
+            data: createdQuestions 
         });
 
     } catch (error: any) {
-        console.error("Batch delete error:", error);
-        res.status(500).json({ message: 'Lỗi khi xóa danh sách câu hỏi', error: error.message });
+        console.error('Import error:', error);
+        res.status(500).json({ message: 'Lỗi khi import dữ liệu: ' + error.message });
     }
 };

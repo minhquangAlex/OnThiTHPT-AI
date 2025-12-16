@@ -556,18 +556,7 @@ const api = {
         }
         return response.json();
     },
-    removeQuestionFromExam: async (examId: string, questionId: string) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/exams/${examId}/questions/${questionId}`, {
-            method: 'DELETE',
-            headers: { 
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-        });
-        if (!response.ok) throw new Error('Lỗi khi gỡ câu hỏi khỏi đề');
-        return response.json();
-    },
+    
 };
 
 export default api;

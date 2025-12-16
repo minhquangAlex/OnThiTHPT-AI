@@ -186,24 +186,3 @@ export const createFixedExam = async (req: Request, res: Response) => {
     }
 };
 
-export const removeQuestionFromExam = async (req: Request, res: Response) => {
-    try {
-        const { id, questionId } = req.params; // id là examId
-
-        // Sử dụng $pull để rút questionId ra khỏi mảng questions
-        const updatedExam = await Exam.findByIdAndUpdate(
-            id,
-            { $pull: { questions: questionId } },
-            { new: true }
-        );
-
-        if (!updatedExam) {
-            return res.status(404).json({ message: 'Exam not found' });
-        }
-
-        res.json({ message: 'Đã gỡ câu hỏi khỏi đề thi', exam: updatedExam });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Lỗi khi gỡ câu hỏi' });
-    }
-};

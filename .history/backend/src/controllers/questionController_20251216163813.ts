@@ -164,32 +164,3 @@ export const batchUploadQuestions = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: 'Batch upload failed', error });
     }
 };
-// @desc    Delete multiple questions
-// @route   POST /api/questions/batch-delete
-// @access  Admin
-export const deleteQuestionsBulk = async (req: Request, res: Response) => {
-    try {
-        const { ids } = req.body; // ids là mảng các string ['id1', 'id2']
-
-        if (!ids || !Array.isArray(ids) || ids.length === 0) {
-            return res.status(400).json({ message: 'Danh sách ID không hợp lệ' });
-        }
-
-        // Thực hiện xóa
-        const result = await Question.deleteMany({ 
-            _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) } 
-        });
-
-        // (Tùy chọn) Cần tính toán lại questionCount của các Subject liên quan
-        // Nhưng để tối ưu hiệu năng, ta có thể bỏ qua hoặc chạy background job sau.
-
-        res.json({ 
-            message: `Đã xóa thành công ${result.deletedCount} câu hỏi`, 
-            deletedCount: result.deletedCount 
-        });
-
-    } catch (error: any) {
-        console.error("Batch delete error:", error);
-        res.status(500).json({ message: 'Lỗi khi xóa danh sách câu hỏi', error: error.message });
-    }
-};

@@ -22,6 +22,5 @@ router.post('/random', protect, generateRandomExam);
 // GET /api/exams/:id
 router.get('/:id', protect, getExamById);
 router.post('/create', protect, admin, createFixedExam);
-router.delete('/:id/questions/:questionId', protect, removeQuestionFromExam);
 
 export default router;
