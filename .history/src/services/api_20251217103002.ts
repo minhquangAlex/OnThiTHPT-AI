@@ -1,4 +1,4 @@
-import { BiologyIcon, ChemistryIcon, EnglishIcon, HistoryIcon, MathIcon, PhysicsIcon,GeographyIcon, VietnameseIcon, LogicIcon, DgnlIcon } from '../components/icons/SubjectIcons';
+import { BiologyIcon, ChemistryIcon, EnglishIcon, HistoryIcon, MathIcon, PhysicsIcon,GeographyIcon, VietnameseIcon, LogicIcon } from '../components/icons/SubjectIcons';
 import type { Question, Subject, User } from '../types';
 
 // This is a mapping from icon name (string from DB) to the actual component
@@ -9,10 +9,6 @@ const iconComponents: { [key: string]: React.ComponentType<{ className?: string 
     'ChemistryIcon': ChemistryIcon,
     'BiologyIcon': BiologyIcon,
     'HistoryIcon': HistoryIcon,
-    'GeographyIcon': GeographyIcon,
-    'VietnameseIcon': VietnameseIcon,
-    'LogicIcon': LogicIcon,
-    'DgnlIcon': DgnlIcon,
 };
 
 // Link Backend Ngrok của bạn
@@ -570,21 +566,6 @@ const api = {
             },
         });
         if (!response.ok) throw new Error('Lỗi khi gỡ câu hỏi khỏi đề');
-        return response.json();
-    },
-    // Clone questions
-    cloneQuestions: async (targetSubjectId: string, sourceQuestionIds: string[]) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/questions/clone`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-            body: JSON.stringify({ targetSubjectId, sourceQuestionIds })
-        });
-        if (!response.ok) throw new Error('Lỗi sao chép câu hỏi');
         return response.json();
     },
 };

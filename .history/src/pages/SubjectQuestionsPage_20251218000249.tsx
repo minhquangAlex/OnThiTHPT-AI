@@ -36,27 +36,25 @@ const SubjectQuestionsPage: React.FC = () => {
   // State lưu cấu hình đề thi
   const [examConfig, setExamConfig] = useState<any>(null);
 
-  // Hàm load dữ liệu (được tách ra để gọi lại sau khi import)
-  const loadData = async () => {
-    if (!subjectId) return;
-    setLoading(true);
-    try {
-      const qs = await api.getQuestions(subjectId);
-      setQuestions(qs);
-      try {
-          const res = await api.getExamsBySubject(subjectId);
-          setExamConfig(res.config);
-      } catch (e) { console.warn('No exam config'); }
-    } catch (err) {
-      console.error(err);
-      alert('Không thể tải dữ liệu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    const load = async () => {
+      if (!subjectId) return;
+      setLoading(true);
+      try {
+        const qs = await api.getQuestions(subjectId);
+        setQuestions(qs);
+        try {
+            const res = await api.getExamsBySubject(subjectId);
+            setExamConfig(res.config);
+        } catch (e) { console.warn('No exam config'); }
+      } catch (err) {
+        console.error(err);
+        alert('Không thể tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [subjectId]);
 
   // --- LOGIC CHỌN CÂU HỎI ---

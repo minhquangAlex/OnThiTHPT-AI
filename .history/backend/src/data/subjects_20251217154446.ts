@@ -54,10 +54,5 @@ export const subjects = [
     icon: 'LogicIcon', // Tạm dùng
     description: 'Phân tích số liệu, tư duy logic, giải quyết vấn đề.',
   },
-  {
-    name: 'Đánh giá năng lực (ĐHQG)',
-    slug: 'dgnl',
-    icon: 'DgnlIcon', // Icon riêng biệt
-    description: 'Bài thi tổng hợp 120 câu: Ngôn ngữ, Toán, Tư duy logic, Phân tích số liệu & Giải quyết vấn đề.',
-  },
+  
 ];

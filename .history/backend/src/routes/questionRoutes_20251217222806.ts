@@ -13,6 +13,6 @@ router.post('/batch', protect, admin, batchUploadQuestions);
 router.post('/', protect, admin, createQuestion);
 router.put('/:id', protect, admin, updateQuestion);
 router.delete('/:id', protect, admin, deleteQuestion);
-router.post('/clone', protect, admin, cloneQuestions);
+
 
 export default router;

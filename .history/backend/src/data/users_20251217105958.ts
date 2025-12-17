@@ -9,7 +9,7 @@ export const users = [
   {
     name: 'QuangNguyen',
     password: 'studentpassword',
-    email: 'student@bigmap.edu.vn',
+    email: 'admin@example.com',
     role: 'student',
   },
 ];

@@ -36,27 +36,25 @@ const SubjectQuestionsPage: React.FC = () => {
   // State lưu cấu hình đề thi
   const [examConfig, setExamConfig] = useState<any>(null);
 
-  // Hàm load dữ liệu (được tách ra để gọi lại sau khi import)
-  const loadData = async () => {
-    if (!subjectId) return;
-    setLoading(true);
-    try {
-      const qs = await api.getQuestions(subjectId);
-      setQuestions(qs);
-      try {
-          const res = await api.getExamsBySubject(subjectId);
-          setExamConfig(res.config);
-      } catch (e) { console.warn('No exam config'); }
-    } catch (err) {
-      console.error(err);
-      alert('Không thể tải dữ liệu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    const load = async () => {
+      if (!subjectId) return;
+      setLoading(true);
+      try {
+        const qs = await api.getQuestions(subjectId);
+        setQuestions(qs);
+        try {
+            const res = await api.getExamsBySubject(subjectId);
+            setExamConfig(res.config);
+        } catch (e) { console.warn('No exam config'); }
+      } catch (err) {
+        console.error(err);
+        alert('Không thể tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [subjectId]);
 
   // --- LOGIC CHỌN CÂU HỎI ---
@@ -458,37 +456,7 @@ const SubjectQuestionsPage: React.FC = () => {
             </div>
         </div>
       )}
-      {/* --- MODAL CHỌN CÁCH THÊM CÂU HỎI (MỚI) --- */}
-      {showAddOptions && (
-         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl w-96 shadow-2xl animate-fade-in-up">
-                <h3 className="font-bold text-lg mb-4 dark:text-white">Thêm câu hỏi</h3>
-                <div className="space-y-3">
-                    <button className="w-full p-3 border-2 border-indigo-100 hover:border-indigo-500 bg-indigo-50/30 rounded-lg flex items-center gap-3 font-bold text-indigo-700 dark:text-indigo-400 dark:border-slate-700 dark:hover:border-indigo-500"
-                        onClick={() => navigate('/admin/questions/new', { state: { subjectId } })}
-                    >
-                        <span className="text-2xl">📝</span> Tạo câu hỏi mới
-                    </button>
-                    
-                    <button className="w-full p-3 border-2 border-green-100 hover:border-green-500 bg-green-50/30 rounded-lg flex items-center gap-3 font-bold text-green-700 dark:text-green-400 dark:border-slate-700 dark:hover:border-green-500"
-                        onClick={() => { setShowAddOptions(false); setShowGlobalBank(true); }}
-                    >
-                        <span className="text-2xl">📚</span> Lấy câu hỏi sẵn có
-                    </button>
-                </div>
-                <button onClick={() => setShowAddOptions(false)} className="mt-4 text-sm text-slate-500 hover:underline w-full">Hủy</button>
-            </div>
-         </div>
-      )}
-
-      {/* --- MODAL KHO CÂU HỎI TỔNG HỢP (GLOBAL) --- */}
-      {showGlobalBank && (
-          <GlobalQuestionBankModal 
-              targetSubjectId={subjectId!} 
-              onClose={() => setShowGlobalBank(false)}
-              onSuccess={() => loadData()} // Gọi hàm load lại dữ liệu
-          />
-      )}
+      
     </div>
   );
 };

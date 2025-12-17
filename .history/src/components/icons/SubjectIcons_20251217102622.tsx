@@ -1,7 +1,6 @@
 import { 
   Calculator, FlaskConical, Atom, Dna, Languages, 
-  History, Globe, BookOpen, BrainCircuit ,
-  Award
+  History, Globe, BookOpen, BrainCircuit 
 } from 'lucide-react';
 
 // Map icon
@@ -16,4 +15,3 @@ export const HistoryIcon = History;
 export const GeographyIcon = Globe;       // Địa lý
 export const VietnameseIcon = BookOpen;   // Tiếng Việt
 export const LogicIcon = BrainCircuit;    // Tư duy Logic
-export const DgnlIcon = Award;

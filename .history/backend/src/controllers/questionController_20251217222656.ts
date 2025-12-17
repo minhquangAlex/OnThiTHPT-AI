@@ -212,14 +212,11 @@ export const cloneQuestions = async (req: Request, res: Response) => {
         }
 
         // Chuẩn bị dữ liệu mới (đổi subjectId)
-        // 👇 SỬA TẠI ĐÂY: Thêm (q: any) để tránh lỗi TypeScript
-        const newQuestions = questionsToClone.map((q: any) => {
-            // Lấy ra các trường hệ thống để loại bỏ, giữ lại nội dung (rest)
-            const { _id, createdAt, updatedAt, __v, ...rest } = q; 
-            
+        const newQuestions = questionsToClone.map(q => {
+            const { _id, createdAt, updatedAt, __v, ...rest } = q; // Bỏ các trường hệ thống cũ
             return {
                 ...rest,
-                subjectId: new Types.ObjectId(targetSubjectId) // Gán sang môn mới
+                subjectId: new Types.ObjectId(targetSubjectId) // Gán sang môn mới (ĐGNL)
             };
         });
 

@@ -12,7 +12,7 @@ const EXAM_CONFIG: Record<string, any> = {
     'biology': { duration: 50, structure: { multiple_choice: 18, true_false: 4, short_answer: 6 } },
     'history': { duration: 50, structure: { multiple_choice: 24, true_false: 4, short_answer: 0 } },
     'english': { duration: 50, structure: { multiple_choice: 40, true_false: 0, short_answer: 0 } },
-    'dgnl': { duration: 150, structure: { multiple_choice: 120,  true_false: 0, short_answer: 0 } },
+    
     'default': { duration: 45, structure: { multiple_choice: 20, true_false: 0, short_answer: 0 } }
 };
 

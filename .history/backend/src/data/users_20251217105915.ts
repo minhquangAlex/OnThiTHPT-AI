@@ -3,13 +3,11 @@ export const users = [
   {
     name: 'MinhNguyen',
     password: 'adminpassword',
-    email: 'admin@147.edu.vn',
     role: 'admin',
   },
   {
     name: 'QuangNguyen',
     password: 'studentpassword',
-    email: 'student@bigmap.edu.vn',
     role: 'student',
   },
 ];

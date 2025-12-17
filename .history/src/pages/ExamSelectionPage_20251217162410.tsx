@@ -83,50 +83,25 @@ const ExamSelectionPage: React.FC = () => {
 
                         {/* Thống kê cấu trúc */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-    {/* Phần 1 */}
-    <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Languages className="w-12 h-12" />
-        </div>
-        <Languages className="w-6 h-6 text-blue-300 mb-2"/>
-        <div className="font-bold text-lg">Phần 1: Ngôn ngữ</div>
-        <div className="text-sm text-blue-200">Tiếng Việt & Tiếng Anh</div>
-        <div className="mt-2 pt-2 border-t border-white/10 text-xs font-medium">
-            <div className="flex justify-between"><span>Tiếng Việt:</span> <span>30 câu</span></div>
-            <div className="flex justify-between"><span>Tiếng Anh:</span> <span>30 câu</span></div>
-            <div className="font-bold text-yellow-300 mt-1">Tổng: 60 câu</div>
-        </div>
-    </div>
-
-    {/* Phần 2 */}
-    <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Calculator className="w-12 h-12" />
-        </div>
-        <Calculator className="w-6 h-6 text-green-300 mb-2"/>
-        <div className="font-bold text-lg">Phần 2: Toán học</div>
-        <div className="text-sm text-blue-200">Tư duy logic toán học</div>
-        <div className="mt-2 pt-2 border-t border-white/10 text-xs font-medium">
-            <div className="flex justify-between"><span>Toán học:</span> <span>30 câu</span></div>
-            <div className="font-bold text-yellow-300 mt-1">Tổng: 30 câu</div>
-        </div>
-    </div>
-
-    {/* Phần 3 */}
-    <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-            <FlaskConical className="w-12 h-12" />
-        </div>
-        <FlaskConical className="w-6 h-6 text-purple-300 mb-2"/>
-        <div className="font-bold text-lg">Phần 3: Khoa học</div>
-        <div className="text-sm text-blue-200">Tư duy & Suy luận</div>
-        <div className="mt-2 pt-2 border-t border-white/10 text-xs font-medium">
-            <div className="flex justify-between"><span>Logic/Số liệu:</span> <span>12 câu</span></div>
-            <div className="flex justify-between"><span>Suy luận KH:</span> <span>18 câu</span></div>
-            <div className="font-bold text-yellow-300 mt-1">Tổng: 30 câu</div>
-        </div>
-    </div>
-</div>
+                            <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+                                <Languages className="w-6 h-6 text-blue-300 mb-2"/>
+                                <div className="font-bold text-lg">Phần 1</div>
+                                <div className="text-sm text-blue-200">Sử dụng Ngôn ngữ</div>
+                                <div className="text-xs mt-1 opacity-70">40 câu (Tiếng Việt, Tiếng Anh)</div>
+                            </div>
+                            <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+                                <Calculator className="w-6 h-6 text-green-300 mb-2"/>
+                                <div className="font-bold text-lg">Phần 2</div>
+                                <div className="text-sm text-blue-200">Toán học, Logic, Số liệu</div>
+                                <div className="text-xs mt-1 opacity-70">30 câu</div>
+                            </div>
+                            <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+                                <FlaskConical className="w-6 h-6 text-purple-300 mb-2"/>
+                                <div className="font-bold text-lg">Phần 3</div>
+                                <div className="text-sm text-blue-200">Giải quyết vấn đề</div>
+                                <div className="text-xs mt-1 opacity-70">50 câu (Lý, Hóa, Sinh, Sử, Địa)</div>
+                            </div>
+                        </div>
 
                         <div className="flex items-center gap-6 text-sm font-medium pt-2">
                              <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-yellow-400"/> 150 Phút</div>

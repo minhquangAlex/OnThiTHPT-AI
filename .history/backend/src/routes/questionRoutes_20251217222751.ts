@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { batchUploadQuestions, createQuestion, deleteQuestion, getQuestionsBySubject, updateQuestion,deleteQuestionsBulk,cloneQuestions } from '../controllers/questionController';
+import { batchUploadQuestions, createQuestion, deleteQuestion, getQuestionsBySubject, updateQuestion,deleteQuestionsBulk, } from '../controllers/questionController';
 import { admin, protect } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -13,6 +13,6 @@ router.post('/batch', protect, admin, batchUploadQuestions);
 router.post('/', protect, admin, createQuestion);
 router.put('/:id', protect, admin, updateQuestion);
 router.delete('/:id', protect, admin, deleteQuestion);
-router.post('/clone', protect, admin, cloneQuestions);
+
 
 export default router;

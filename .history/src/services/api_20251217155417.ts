@@ -572,21 +572,6 @@ const api = {
         if (!response.ok) throw new Error('Lỗi khi gỡ câu hỏi khỏi đề');
         return response.json();
     },
-    // Clone questions
-    cloneQuestions: async (targetSubjectId: string, sourceQuestionIds: string[]) => {
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/questions/clone`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-                ...NGROK_SKIP_HEADER 
-            },
-            body: JSON.stringify({ targetSubjectId, sourceQuestionIds })
-        });
-        if (!response.ok) throw new Error('Lỗi sao chép câu hỏi');
-        return response.json();
-    },
 };
 
 export default api;

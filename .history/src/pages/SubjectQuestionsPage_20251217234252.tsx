@@ -36,27 +36,25 @@ const SubjectQuestionsPage: React.FC = () => {
   // State lưu cấu hình đề thi
   const [examConfig, setExamConfig] = useState<any>(null);
 
-  // Hàm load dữ liệu (được tách ra để gọi lại sau khi import)
-  const loadData = async () => {
-    if (!subjectId) return;
-    setLoading(true);
-    try {
-      const qs = await api.getQuestions(subjectId);
-      setQuestions(qs);
-      try {
-          const res = await api.getExamsBySubject(subjectId);
-          setExamConfig(res.config);
-      } catch (e) { console.warn('No exam config'); }
-    } catch (err) {
-      console.error(err);
-      alert('Không thể tải dữ liệu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    const load = async () => {
+      if (!subjectId) return;
+      setLoading(true);
+      try {
+        const qs = await api.getQuestions(subjectId);
+        setQuestions(qs);
+        try {
+            const res = await api.getExamsBySubject(subjectId);
+            setExamConfig(res.config);
+        } catch (e) { console.warn('No exam config'); }
+      } catch (err) {
+        console.error(err);
+        alert('Không thể tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [subjectId]);
 
   // --- LOGIC CHỌN CÂU HỎI ---
@@ -210,7 +208,7 @@ const SubjectQuestionsPage: React.FC = () => {
             {!isSelectionMode ? (
                 <>
                     <Button variant="secondary" onClick={() => navigate('/admin')}>Quay lại</Button>
-                    <Button onClick={() => {if (subjectNameFromState?.toLowerCase().includes('đánh giá năng lực')) {setShowAddOptions(true);} else { navigate('/admin/questions/new', { state: { subjectId } });}}} >+ Thêm câu hỏi </Button>
+                    <Button onClick={() => {if (subjectNameFromState?.toLowerCase().includes('đánh giá năng lực')) {setShowAddOptions(true);} else { navigate('/admin/questions/new', { state: { subjectId } });}}}>+ Thêm câu hỏi </Button>
                     <Button 
                         className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2" 
                         onClick={() => setShowCreateModal(true)} 
@@ -458,35 +456,37 @@ const SubjectQuestionsPage: React.FC = () => {
             </div>
         </div>
       )}
-      {/* --- MODAL CHỌN CÁCH THÊM CÂU HỎI (MỚI) --- */}
+
       {showAddOptions && (
-         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl w-96 shadow-2xl animate-fade-in-up">
-                <h3 className="font-bold text-lg mb-4 dark:text-white">Thêm câu hỏi</h3>
+         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-xl w-96 shadow-xl">
+                <h3 className="font-bold text-lg mb-4">Thêm câu hỏi</h3>
                 <div className="space-y-3">
-                    <button className="w-full p-3 border-2 border-indigo-100 hover:border-indigo-500 bg-indigo-50/30 rounded-lg flex items-center gap-3 font-bold text-indigo-700 dark:text-indigo-400 dark:border-slate-700 dark:hover:border-indigo-500"
+                    <button className="w-full p-3 border rounded hover:bg-indigo-50 flex gap-2 font-bold text-indigo-700"
                         onClick={() => navigate('/admin/questions/new', { state: { subjectId } })}
                     >
-                        <span className="text-2xl">📝</span> Tạo câu hỏi mới
+                        📝 Tạo câu hỏi mới
                     </button>
-                    
-                    <button className="w-full p-3 border-2 border-green-100 hover:border-green-500 bg-green-50/30 rounded-lg flex items-center gap-3 font-bold text-green-700 dark:text-green-400 dark:border-slate-700 dark:hover:border-green-500"
+                    <button className="w-full p-3 border rounded hover:bg-green-50 flex gap-2 font-bold text-green-700"
                         onClick={() => { setShowAddOptions(false); setShowGlobalBank(true); }}
                     >
-                        <span className="text-2xl">📚</span> Lấy câu hỏi sẵn có
+                        📚 Lấy từ Ngân hàng có sẵn
                     </button>
                 </div>
-                <button onClick={() => setShowAddOptions(false)} className="mt-4 text-sm text-slate-500 hover:underline w-full">Hủy</button>
+                <button onClick={() => setShowAddOptions(false)} className="mt-4 text-sm text-slate-500 underline w-full">Hủy</button>
             </div>
          </div>
       )}
 
-      {/* --- MODAL KHO CÂU HỎI TỔNG HỢP (GLOBAL) --- */}
+      {/* --- MODAL KHO CÂU HỎI CHUNG --- */}
       {showGlobalBank && (
           <GlobalQuestionBankModal 
               targetSubjectId={subjectId!} 
               onClose={() => setShowGlobalBank(false)}
-              onSuccess={() => loadData()} // Gọi hàm load lại dữ liệu
+              onSuccess={() => {
+                  // Reload lại danh sách câu hỏi hiện tại
+                  load(); // Bạn cần tách hàm load ra khỏi useEffect để gọi lại
+              }}
           />
       )}
     </div>

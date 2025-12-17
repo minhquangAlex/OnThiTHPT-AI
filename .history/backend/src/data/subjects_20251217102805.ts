@@ -45,19 +45,13 @@ export const subjects = [
   {
     name: 'Tiếng Việt',
     slug: 'vietnamese',
-    icon: 'VietnameseIcon', // Tạm dùng
+    icon: 'HistoryIcon', // Tạm dùng
     description: 'Ngữ pháp, ngữ nghĩa, phong cách học tiếng Việt.',
   },
   {
     name: 'Tư duy Logic',
     slug: 'logic',
-    icon: 'LogicIcon', // Tạm dùng
+    icon: 'MathIcon', // Tạm dùng
     description: 'Phân tích số liệu, tư duy logic, giải quyết vấn đề.',
-  },
-  {
-    name: 'Đánh giá năng lực (ĐHQG)',
-    slug: 'dgnl',
-    icon: 'DgnlIcon', // Icon riêng biệt
-    description: 'Bài thi tổng hợp 120 câu: Ngôn ngữ, Toán, Tư duy logic, Phân tích số liệu & Giải quyết vấn đề.',
   },
 ];

@@ -7,7 +7,8 @@ import api from '../services/api';
 import { getFullImageUrl } from '../utils/imageHelper';
 import NgrokImage from '../components/NgrokImage';
 import { Question } from '../types';
-import { FilePlus, Image as ImageIcon, CheckSquare, Square, X, Wand2, Trash2 } from 'lucide-react'; // Thêm Trash2
+import { FilePlus, Image as ImageIcon, CheckSquare, Square, X, Wand2, Upload, BookOpen } from 'lucide-react';
+// Import Component GlobalQuestionBankModal (Giả sử bạn đã tạo file này theo hướng dẫn trước)
 import GlobalQuestionBankModal from '../components/GlobalQuestionBankModal';
 
 const SubjectQuestionsPage: React.FC = () => {
@@ -21,20 +22,22 @@ const SubjectQuestionsPage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   
   // State form sửa
-  const [editForm, setEditForm] = useState<any>({ questionText: '', options: {}, correctAnswer: 'A', explanation: '', trueFalseOptions: [], shortAnswerCorrect: '' });
+  const [editForm, setEditForm] = useState<any>({ questionText: '', options: {}, correctAnswer: 'A', explanation: '', trueFalseOptions: [], shortAnswerCorrect: '', groupContext: '' });
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // --- STATE MỚI CHO TẠO ĐỀ THI ---
+  // --- STATE TẠO ĐỀ THI ---
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showAddOptions, setShowAddOptions] = useState(false); // Modal chọn cách thêm
-  const [showGlobalBank, setShowGlobalBank] = useState(false); // Modal kho câu hỏi
   
   // State lưu cấu hình đề thi
   const [examConfig, setExamConfig] = useState<any>(null);
+
+  // --- STATE MỚI CHO VIỆC THÊM CÂU HỎI (ĐGNL) ---
+  const [showAddOptions, setShowAddOptions] = useState(false);
+  const [showGlobalBank, setShowGlobalBank] = useState(false);
 
   // Hàm load dữ liệu (được tách ra để gọi lại sau khi import)
   const loadData = async () => {
@@ -59,7 +62,6 @@ const SubjectQuestionsPage: React.FC = () => {
     loadData();
   }, [subjectId]);
 
-  // --- LOGIC CHỌN CÂU HỎI ---
   const toggleSelection = (id: string) => {
     const newSet = new Set(selectedIds);
     if (newSet.has(id)) newSet.delete(id);
@@ -68,11 +70,8 @@ const SubjectQuestionsPage: React.FC = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === questions.length) {
-        setSelectedIds(new Set());
-    } else {
-        setSelectedIds(new Set(questions.map(q => q._id || q.id)));
-    }
+    if (selectedIds.size === questions.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(questions.map(q => q._id || q.id)));
   };
 
   const handleQuickSelect = (type: string, count: number) => {
@@ -88,32 +87,6 @@ const SubjectQuestionsPage: React.FC = () => {
       setSelectedIds(newSet);
   };
 
-  // --- LOGIC XÓA HÀNG LOẠT (MỚI) ---
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return alert("Vui lòng chọn ít nhất 1 câu hỏi để xóa!");
-    
-    if (!confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA VĨNH VIỄN ${selectedIds.size} câu hỏi đã chọn? Hành động này không thể hoàn tác.`)) {
-        return;
-    }
-
-    try {
-        // Gọi API xóa nhiều (đã thêm trong api.ts ở bước trước)
-        await api.deleteQuestionsBulk(Array.from(selectedIds));
-        
-        // Cập nhật giao diện: Loại bỏ các câu đã xóa
-        setQuestions(prev => prev.filter(q => !selectedIds.has(q._id || q.id)));
-        
-        // Reset trạng thái chọn
-        setSelectedIds(new Set());
-        setIsSelectionMode(false);
-        
-        alert('Đã xóa thành công!');
-    } catch (err: any) {
-        alert(err.message || 'Lỗi khi xóa câu hỏi');
-    }
-  };
-
-  // --- LOGIC TẠO ĐỀ ---
   const handleCreateExamProcess = async (mode: 'random' | 'manual', title: string, duration: number) => {
     try {
         const payload: any = { subjectId: subjectId!, title: title, duration: duration };
@@ -133,7 +106,7 @@ const SubjectQuestionsPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Bạn có chắc muốn xóa câu hỏi này?')) return;
-    try { await api.deleteQuestion(id); setQuestions(prev => prev.filter(q => q._id !== id && q.id !== id)); } catch (err: any) { alert(err.message || 'Lỗi khi xóa câu hỏi'); }
+    try { await api.deleteQuestion(id); setQuestions(prev => prev.filter(q => q._id !== id && q.id !== id)); } catch (err: any) { alert(err.message); }
   };
 
   const startEdit = (q: any) => {
@@ -144,7 +117,8 @@ const SubjectQuestionsPage: React.FC = () => {
         correctAnswer: q.correctAnswer || 'A', 
         explanation: q.explanation || '',
         trueFalseOptions: q.trueFalseOptions && q.trueFalseOptions.length > 0 ? q.trueFalseOptions : [{ id: 'a', text: '', isCorrect: false }, { id: 'b', text: '', isCorrect: false }, { id: 'c', text: '', isCorrect: false }, { id: 'd', text: '', isCorrect: false }],
-        shortAnswerCorrect: q.shortAnswerCorrect || ''
+        shortAnswerCorrect: q.shortAnswerCorrect || '',
+        groupContext: q.groupContext || ''
     });
     setEditImageFile(null);
     setEditImagePreview(q.imageUrl ? getFullImageUrl(q.imageUrl) || null : null);
@@ -152,7 +126,7 @@ const SubjectQuestionsPage: React.FC = () => {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditForm({ questionText: '', options: {}, correctAnswer: 'A', explanation: '', trueFalseOptions: [], shortAnswerCorrect: '' });
+    setEditForm({ questionText: '', options: {}, correctAnswer: 'A', explanation: '', trueFalseOptions: [], shortAnswerCorrect: '', groupContext: '' });
     setEditImageFile(null);
     setEditImagePreview(null);
   };
@@ -175,6 +149,7 @@ const SubjectQuestionsPage: React.FC = () => {
       const payload: any = { 
           questionText: editForm.questionText, 
           explanation: editForm.explanation, 
+          groupContext: editForm.groupContext 
       };
 
       if (!type || type === 'multiple_choice') { payload.options = editForm.options; payload.correctAnswer = editForm.correctAnswer; } 
@@ -196,10 +171,21 @@ const SubjectQuestionsPage: React.FC = () => {
     return <span>—</span>;
   };
 
+  // --- LOGIC XỬ LÝ NÚT THÊM CÂU HỎI (MỚI) ---
+  const handleAddButtonClick = () => {
+    // Kiểm tra xem có phải môn ĐGNL không (dựa trên tên hoặc slug nếu có)
+    const isDGNL = subjectNameFromState?.toLowerCase().includes('đánh giá năng lực') || subjectNameFromState?.toLowerCase().includes('đgnl');
+    
+    if (isDGNL) {
+        setShowAddOptions(true);
+    } else {
+        navigate('/admin/questions/new', { state: { subjectId } });
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 relative">
       
-      {/* HEADER & TOOLBAR */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
             <h1 className="text-2xl font-bold">Quản lý câu hỏi: {subjectNameFromState || subjectId}</h1>
@@ -210,20 +196,22 @@ const SubjectQuestionsPage: React.FC = () => {
             {!isSelectionMode ? (
                 <>
                     <Button variant="secondary" onClick={() => navigate('/admin')}>Quay lại</Button>
-                    <Button onClick={() => {if (subjectNameFromState?.toLowerCase().includes('đánh giá năng lực')) {setShowAddOptions(true);} else { navigate('/admin/questions/new', { state: { subjectId } });}}} >+ Thêm câu hỏi </Button>
-                    <Button 
-                        className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2" 
-                        onClick={() => setShowCreateModal(true)} 
-                    >
-                        <FilePlus className="w-4 h-4" /> Đóng gói đề thi
+                    
+                    {/* Nút Import JSON */}
+                    <Button className="bg-green-600 hover:bg-green-700 flex items-center gap-1" onClick={() => navigate(`/admin/import/${subjectId}`)}>
+                        <Upload className="w-4 h-4"/> Import JSON
                     </Button>
-                    {/* Nút bật chế độ chọn */}
-                    <Button variant="secondary" className="border-slate-300" onClick={() => setIsSelectionMode(true)}>
-                        <CheckSquare className="w-4 h-4 mr-1"/> Chọn nhiều
+                    
+                    {/* 👇 NÚT THÊM CÂU HỎI (ĐÃ SỬA LOGIC) 👇 */}
+                    <Button onClick={handleAddButtonClick}>+ Thêm câu hỏi</Button>
+
+                    <Button className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2" onClick={() => setShowCreateModal(true)}>
+                        <FilePlus className="w-4 h-4" /> Đóng gói đề thi
                     </Button>
                 </>
             ) : (
                 <>
+                    {/* ... (Phần Toolbar chọn nhanh cũ giữ nguyên) ... */}
                     {/* Toolbar chọn nhanh */}
                     {examConfig && (
                         <div className="flex gap-2 items-center mr-3 bg-white dark:bg-slate-800 p-1.5 rounded-lg border shadow-sm">
@@ -233,26 +221,9 @@ const SubjectQuestionsPage: React.FC = () => {
                             <button onClick={() => handleQuickSelect('short_answer', examConfig.structure?.short_answer || 0)} className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded border border-orange-200 hover:bg-orange-100 font-medium">+{examConfig.structure?.short_answer} P.III</button>
                         </div>
                     )}
-                    <span className="flex items-center px-3 font-bold text-indigo-600 bg-indigo-50 rounded border border-indigo-200">
-                        Đã chọn: {selectedIds.size}
-                    </span>
-                    
-                    <Button className="bg-green-600 hover:bg-green-700" onClick={() => setShowCreateModal(true)}>
-                        Tạo đề
-                    </Button>
-
-                    {/* 👇 NÚT XÓA HÀNG LOẠT (MỚI) 👇 */}
-                    <Button 
-                        variant="danger" 
-                        onClick={handleBulkDelete}
-                        className="flex items-center gap-1"
-                    >
-                        <Trash2 className="w-4 h-4" /> Xóa ({selectedIds.size})
-                    </Button>
-
-                    <Button variant="secondary" onClick={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}>
-                        Hủy
-                    </Button>
+                    <span className="flex items-center px-3 font-bold text-indigo-600 bg-indigo-50 rounded border border-indigo-200">Đã chọn: {selectedIds.size}</span>
+                    <Button className="bg-green-600 hover:bg-green-700" onClick={() => setShowCreateModal(true)}>Tạo đề</Button>
+                    <Button variant="danger" onClick={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}>Hủy</Button>
                 </>
             )}
         </div>
@@ -283,7 +254,6 @@ const SubjectQuestionsPage: React.FC = () => {
                     return (
                         <tr key={qId} className={`border-b dark:border-slate-700 transition-colors ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                             
-                            {/* CỘT CHECKBOX */}
                             <td className="p-4 text-center align-top pt-5">
                                 {isSelectionMode && (
                                     <button onClick={() => toggleSelection(qId)}>
@@ -295,125 +265,39 @@ const SubjectQuestionsPage: React.FC = () => {
                             <td className="p-4 align-top">
                                 {editingId === qId ? (
                                 <div className="space-y-4">
+                                    {/* ... Code Edit Form cũ ... */}
                                     <div className="flex items-start gap-4 p-3 border rounded bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700">
                                         <div className="shrink-0 w-20 h-20 bg-white border rounded flex items-center justify-center overflow-hidden">
                                             {editImagePreview ? <img src={editImagePreview} alt="Preview" className="w-full h-full object-contain" /> : <ImageIcon className="text-slate-300 w-8 h-8" />}
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-sm font-medium mb-1 cursor-pointer text-indigo-600 hover:underline">
-                                                Chọn ảnh mới
-                                                <input type="file" accept="image/*" onChange={handleEditFileSelect} className="hidden" />
-                                            </label>
-                                            <p className="text-xs text-slate-400">Hỗ trợ JPG, PNG. Tối đa 5MB.</p>
+                                            <label className="block text-sm font-medium mb-1 cursor-pointer text-indigo-600 hover:underline">Chọn ảnh mới<input type="file" accept="image/*" onChange={handleEditFileSelect} className="hidden" /></label>
                                         </div>
                                     </div>
+                                    <div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Bài đọc / Ngữ cảnh chung:</label><textarea value={editForm.groupContext} onChange={(e) => setEditForm({ ...editForm, groupContext: e.target.value })} className="w-full p-2 border rounded bg-blue-50 dark:bg-blue-900/10 border-blue-200 text-sm" rows={2} placeholder="Dán đoạn văn bài đọc vào đây (nếu có)..." /></div>
                                     <textarea value={editForm.questionText} onChange={e => setEditForm({...editForm, questionText: e.target.value})} className="w-full p-3 border rounded-lg" rows={3} placeholder="Nội dung câu hỏi..." />
-                                    
-                                    {(!q.type || q.type === 'multiple_choice') && (
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {['A', 'B', 'C', 'D'].map((opt) => (
-                                                <div key={opt} className="flex gap-2 items-center">
-                                                    <span className="font-bold w-4 text-slate-500">{opt}</span>
-                                                    <input value={editForm.options?.[opt] || ''} onChange={(e) => setEditForm({ ...editForm, options: { ...editForm.options, [opt]: e.target.value } })} className="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600" />
-                                                </div>
-                                            ))}
-                                            <div className="flex items-center gap-2 mt-2 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded">
-                                                <span className="text-sm font-bold">Đáp án đúng:</span>
-                                                <select value={editForm.correctAnswer} onChange={(e) => setEditForm({ ...editForm, correctAnswer: e.target.value })} className="p-1 border rounded bg-white dark:bg-slate-800">
-                                                    <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {q.type === 'true_false' && (
-                                        <div className="space-y-2 border p-3 rounded-lg bg-slate-50 dark:bg-slate-900">
-                                            {editForm.trueFalseOptions.map((opt: any, idx: number) => (
-                                                <div key={opt.id} className="flex items-center gap-2">
-                                                    <span className="font-bold uppercase w-6 text-indigo-600">{opt.id})</span>
-                                                    <input className="flex-1 p-1.5 border rounded text-sm dark:bg-slate-800 dark:border-slate-600" value={opt.text} onChange={(e) => { const newArr = [...editForm.trueFalseOptions]; newArr[idx].text = e.target.value; setEditForm({ ...editForm, trueFalseOptions: newArr }); }} />
-                                                    <select className={`p-1.5 border rounded text-sm font-bold w-20 ${opt.isCorrect ? 'text-green-600' : 'text-red-500'}`} value={opt.isCorrect ? 'true' : 'false'} onChange={(e) => { const newArr = [...editForm.trueFalseOptions]; newArr[idx].isCorrect = e.target.value === 'true'; setEditForm({ ...editForm, trueFalseOptions: newArr }); }}>
-                                                        <option value="true">Đúng</option>
-                                                        <option value="false">Sai</option>
-                                                    </select>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {q.type === 'short_answer' && (
-                                        <div className="p-3 border border-green-200 rounded-lg bg-green-50 dark:bg-green-900/10">
-                                            <input value={editForm.shortAnswerCorrect} onChange={(e) => setEditForm({ ...editForm, shortAnswerCorrect: e.target.value })} className="w-full p-2 border border-green-300 rounded focus:ring-green-500 font-bold text-lg dark:bg-slate-800 dark:border-green-700" placeholder="VD: 2025" />
-                                        </div>
-                                    )}
-
-                                    <div className="mt-3">
-                                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Giải thích chi tiết:</label>
-                                        <textarea value={editForm.explanation} onChange={(e) => setEditForm({ ...editForm, explanation: e.target.value })} className="w-full p-2 border rounded bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800 text-sm focus:ring-yellow-500" rows={3} placeholder="Nhập lời giải hoặc hướng dẫn..." />
-                                    </div>
+                                    {(!q.type || q.type === 'multiple_choice') && (<div className="grid grid-cols-1 gap-2">{['A', 'B', 'C', 'D'].map((opt) => (<div key={opt} className="flex gap-2 items-center"><span className="font-bold w-4 text-slate-500">{opt}</span><input value={editForm.options?.[opt] || ''} onChange={(e) => setEditForm({ ...editForm, options: { ...editForm.options, [opt]: e.target.value } })} className="w-full p-2 border rounded text-sm dark:bg-slate-800 dark:border-slate-600" /></div>))}<div className="flex items-center gap-2 mt-2 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded"><span className="text-sm font-bold">Đáp án đúng:</span><select value={editForm.correctAnswer} onChange={(e) => setEditForm({ ...editForm, correctAnswer: e.target.value })} className="p-1 border rounded bg-white dark:bg-slate-800"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div></div>)}
+                                    {q.type === 'true_false' && <div className="space-y-2 border p-3 rounded-lg bg-slate-50 dark:bg-slate-900">{editForm.trueFalseOptions.map((opt: any, idx: number) => (<div key={opt.id} className="flex items-center gap-2"><span className="font-bold uppercase w-6 text-indigo-600">{opt.id})</span><input className="flex-1 p-1.5 border rounded text-sm dark:bg-slate-800 dark:border-slate-600" value={opt.text} onChange={(e) => { const newArr = [...editForm.trueFalseOptions]; newArr[idx].text = e.target.value; setEditForm({ ...editForm, trueFalseOptions: newArr }); }} /><select className={`p-1.5 border rounded text-sm font-bold w-20 ${opt.isCorrect ? 'text-green-600' : 'text-red-500'}`} value={opt.isCorrect ? 'true' : 'false'} onChange={(e) => { const newArr = [...editForm.trueFalseOptions]; newArr[idx].isCorrect = e.target.value === 'true'; setEditForm({ ...editForm, trueFalseOptions: newArr }); }}><option value="true">Đúng</option><option value="false">Sai</option></select></div>))}</div>}
+                                    {q.type === 'short_answer' && <div className="p-3 border border-green-200 rounded-lg bg-green-50 dark:bg-green-900/10"><input value={editForm.shortAnswerCorrect} onChange={(e) => setEditForm({ ...editForm, shortAnswerCorrect: e.target.value })} className="w-full p-2 border border-green-300 rounded focus:ring-green-500 font-bold text-lg dark:bg-slate-800 dark:border-green-700" placeholder="VD: 2025" /></div>}
+                                    <div className="mt-3"><label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Giải thích chi tiết:</label><textarea value={editForm.explanation} onChange={(e) => setEditForm({ ...editForm, explanation: e.target.value })} className="w-full p-2 border rounded bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800 text-sm focus:ring-yellow-500" rows={3} placeholder="Nhập lời giải hoặc hướng dẫn..." /></div>
                                 </div>
                                 ) : (
                                 <div>
                                     <div className="font-semibold mb-2 text-indigo-600 dark:text-indigo-400">
-                                        Câu {index + 1} 
-                                        <span className="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-normal uppercase">
-                                            {q.type || 'MC'}
-                                        </span>
+                                        Câu {index + 1} <span className="text-[10px] ml-2 px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-normal uppercase">{q.type || 'MC'}</span>
                                     </div>
-                                    
-                                    {q.imageUrl && <div className="mb-3"><NgrokImage src={getFullImageUrl(q.imageUrl)} alt="question" className="max-h-40 max-w-full object-contain rounded border border-slate-300 bg-white" /></div>}
+                                    {q.groupContext && <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-400 text-sm text-slate-700 dark:text-slate-300 rounded-r"><p className="font-bold text-xs text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1"><BookOpen className="w-3 h-3"/> BÀI ĐỌC:</p><div className="whitespace-pre-wrap leading-relaxed line-clamp-3 hover:line-clamp-none cursor-help" title="Bấm để xem toàn bộ">{q.groupContext}</div></div>}
+                                    {q.imageUrl && <div className="mb-3"><NgrokImage src={getFullImageUrl(q.imageUrl)} className="max-h-40 rounded border" /></div>}
                                     {q.questionText && <div className="whitespace-pre-wrap text-slate-800 dark:text-slate-200 mb-2">{q.questionText}</div>}
                                     {!q.questionText && !q.imageUrl && <div className="text-slate-400 italic mb-2">No content</div>}
-
-                                    {(!q.type || q.type === 'multiple_choice') && q.options && (
-                                    <ul className="list-none p-0 m-0 text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                                        {['A', 'B', 'C', 'D'].map(key => (
-                                        <li key={key} className={`${q.correctAnswer === key ? 'text-green-600 dark:text-green-400 font-bold' : ''}`}>
-                                            <span className="inline-block w-5 font-bold">{key}.</span> {q.options[key]}
-                                        </li>
-                                        ))}
-                                    </ul>
-                                    )}
-                                    
-                                    {q.type === 'true_false' && (
-                                        <div className="mt-2 space-y-1 text-sm bg-slate-50 dark:bg-slate-900 p-2 rounded">
-                                            {q.trueFalseOptions?.map((o: any) => (
-                                                <div key={o.id} className="flex gap-2">
-                                                    <span className="font-bold uppercase text-indigo-500">{o.id})</span> 
-                                                    <span className="text-slate-700 dark:text-slate-300">{o.text}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
+                                    {(!q.type || q.type === 'multiple_choice') && q.options && <ul className="list-none p-0 m-0 text-sm space-y-1">{['A','B','C','D'].map(k => <li key={k} className={q.correctAnswer===k?'font-bold text-green-600':''}>{k}. {q.options[k]}</li>)}</ul>}
+                                    {q.type === 'true_false' && <div className="mt-2 space-y-1 text-sm">{q.trueFalseOptions?.map((o:any)=><div key={o.id}><span className="font-bold">{o.id})</span> {o.text}</div>)}</div>}
                                     {q.explanation && <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-400 text-sm text-slate-700 dark:text-slate-300 rounded-r"><p className="font-bold text-xs text-yellow-700 mb-1">💡 GIẢI THÍCH:</p><div className="whitespace-pre-wrap">{q.explanation}</div></div>}
                                 </div>
                                 )}
                             </td>
-                            <td className="p-4 align-top">
-                                {editingId === qId ? (
-                                    (!q.type || q.type === 'multiple_choice') ? (
-                                        <select value={editForm.correctAnswer} onChange={(e) => setEditForm({ ...editForm, correctAnswer: e.target.value })} className="p-2 border rounded w-full">
-                                            <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
-                                        </select>
-                                    ) : <div className="text-xs text-slate-500 italic">Vào chi tiết để sửa</div>
-                                ) : renderCorrectAnswer(q)}
-                            </td>
-                            <td className="p-4 text-right align-top w-40">
-                                {editingId === qId ? (
-                                <div className="flex justify-end gap-2 flex-col">
-                                    <Button size="sm" onClick={() => saveEdit(qId, q.type)} disabled={isUploading}>
-                                        {isUploading ? 'Lưu...' : 'Lưu'}
-                                    </Button>
-                                    <Button size="sm" variant="secondary" onClick={cancelEdit} disabled={isUploading}>Hủy</Button>
-                                </div>
-                                ) : (
-                                <div className="flex justify-end gap-2">
-                                    <Button size="sm" onClick={() => startEdit(q)}>Sửa</Button>
-                                    <Button size="sm" variant="danger" onClick={() => handleDelete(qId)}>Xóa</Button>
-                                </div>
-                                )}
-                            </td>
+                            <td className="p-4 align-top">{editingId === qId ? ((!q.type || q.type === 'multiple_choice') ? <select value={editForm.correctAnswer} onChange={e => setEditForm({...editForm, correctAnswer: e.target.value})} className="p-2 border rounded w-full"><option>A</option><option>B</option><option>C</option><option>D</option></select> : <div className="text-xs text-slate-500 italic">Vào chi tiết để sửa</div>) : renderCorrectAnswer(q)}</td>
+                            <td className="p-4 text-right align-top w-40">{editingId === qId ? <div className="flex flex-col gap-2"><Button size="sm" onClick={() => saveEdit(qId, q.type)} disabled={isUploading}>Lưu</Button><Button size="sm" variant="secondary" onClick={cancelEdit}>Hủy</Button></div> : <div className="flex gap-2 justify-end"><Button size="sm" onClick={() => startEdit(q)}>Sửa</Button><Button size="sm" variant="danger" onClick={() => handleDelete(qId)}>Xóa</Button></div>}</td>
                         </tr>
                     );
                 })}
@@ -423,7 +307,7 @@ const SubjectQuestionsPage: React.FC = () => {
         )}
       </Card>
 
-      {/* MODAL TẠO ĐỀ THI */}
+      {/* --- MODAL ĐÓNG GÓI ĐỀ THI (CŨ) --- */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-2xl w-full max-w-md animate-fade-in-up">
@@ -447,17 +331,13 @@ const SubjectQuestionsPage: React.FC = () => {
                         <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm font-medium text-center">Đang đóng gói <b>{selectedIds.size}</b> câu hỏi đã chọn.</div>
                         <div><label className="block text-sm font-medium mb-1">Tên đề thi</label><input id="exam-title" className="w-full p-2 border rounded" autoFocus /></div>
                         <div><label className="block text-sm font-medium mb-1">Thời gian (phút)</label><input id="exam-duration" type="number" className="w-full p-2 border rounded" defaultValue={examConfig?.duration || 45} /></div>
-                        <Button className="w-full mt-2" onClick={() => {
-                                const title = (document.getElementById('exam-title') as HTMLInputElement).value;
-                                const duration = Number((document.getElementById('exam-duration') as HTMLInputElement).value);
-                                if(!title) return alert('Nhập tên đề');
-                                handleCreateExamProcess('manual', title, duration);
-                            }}>Hoàn tất</Button>
+                        <Button className="w-full mt-2" onClick={() => { const title = (document.getElementById('exam-title') as HTMLInputElement).value; const duration = Number((document.getElementById('exam-duration') as HTMLInputElement).value); if(!title) return alert('Nhập tên đề'); handleCreateExamProcess('manual', title, duration); }}>Hoàn tất</Button>
                     </div>
                 )}
             </div>
         </div>
       )}
+
       {/* --- MODAL CHỌN CÁCH THÊM CÂU HỎI (MỚI) --- */}
       {showAddOptions && (
          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
@@ -489,6 +369,7 @@ const SubjectQuestionsPage: React.FC = () => {
               onSuccess={() => loadData()} // Gọi hàm load lại dữ liệu
           />
       )}
+
     </div>
   );
 };
